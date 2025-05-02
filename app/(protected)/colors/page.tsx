@@ -1,7 +1,7 @@
 import { CreateColorButton } from '@/components/color/CreateColor';
 import { columns } from '@/components/color/table/columns';
 import { DataTable } from '@/components/color/table/data-table';
-import { fetchColors } from '@/lib/product';
+import { fetchColors } from '@/api/colors';
 
 export default async function Products() {
 	const colors = await fetchColors();

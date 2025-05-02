@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { CategoryState, createCategory } from '@/actions/category-action';
+import ErrorMessage from '../ErrorMessage';
 
 export function CreateCategory({
 	open,
@@ -72,23 +73,14 @@ export function CreateCategory({
 								)}
 							/>
 						</div>
-						{state?.errors?.name &&
-							state.errors.name.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+
+						<ErrorMessage errors={state?.errors?.name} />
 					</div>
 
 					<DialogFooter>
-						{(state?.message || state?.errors) && (
-							<p className='text-sm font-medium text-destructive mr-auto'>
-								{state.message}
-							</p>
-						)}
+						<ErrorMessage
+							errors={state?.message ? [state?.message] : undefined}
+						/>
 						<PendingButton />
 					</DialogFooter>
 				</form>

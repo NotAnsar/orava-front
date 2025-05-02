@@ -1,7 +1,5 @@
-import { logout } from '@/actions/auth-action';
 import SideBarNav from '@/components/nav/SideBarNav';
 import TopNav from '@/components/nav/TopNav';
-import { getCurrentUser } from '@/lib/user';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

@@ -1,9 +1,7 @@
 import { columns } from '@/components/size/table/columns';
 import { DataTable } from '@/components/color/table/data-table';
-
-import { fetchSizes } from '@/lib/product';
-
 import { CreateSizeButton } from '@/components/size/CreateSize';
+import { fetchSizes } from '@/api/sizes';
 
 export default async function Products() {
 	const sizes = await fetchSizes();

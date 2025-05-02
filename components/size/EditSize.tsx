@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { SizeState, updateSize } from '@/actions/size-action';
-import { Size } from '@/types/db';
+import { Size } from '@/types/size';
 
 export function EditSize({
 	open,

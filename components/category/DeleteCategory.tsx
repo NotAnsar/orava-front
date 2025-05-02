@@ -12,7 +12,7 @@ import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '../ui/button';
 import { Loader } from 'lucide-react';
-import { DeleteCategoryState, deleteCategory } from '@/actions/category-action';
+import { deleteCategory } from '@/actions/category-action';
 
 export const DeleteCategory = ({
 	id,
@@ -23,19 +23,14 @@ export const DeleteCategory = ({
 	open: boolean;
 	setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-	const initialState: DeleteCategoryState = { message: null, type: null };
-
-	const [state, action] = useFormState(
-		deleteCategory.bind(null, id),
-		initialState
-	);
+	const [state, action] = useFormState(deleteCategory.bind(null, id), {});
 
 	useEffect(() => {
-		if (state.message) { 
+		if (state.message) {
 			setOpen(false);
 			toast({
 				description: state.message,
-				variant: state.type === 'error' ? 'destructive' : 'default',
+				variant: state.success ? 'default' : 'destructive',
 			});
 		}
 	}, [state, setOpen]);

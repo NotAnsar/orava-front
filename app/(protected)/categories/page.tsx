@@ -1,7 +1,7 @@
 import { CreateCategoryButton } from '@/components/category/CreateCategory';
 import { columns } from '@/components/category/table/columns';
 import { DataTable } from '@/components/category/table/data-table';
-import { fetchCategories } from '@/lib/product';
+import { fetchCategories } from '@/api/categories';
 
 export default async function Products() {
 	const categories = await fetchCategories();

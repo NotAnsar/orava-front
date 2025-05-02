@@ -1,14 +1,13 @@
 'use client';
 
-import { Size } from '@/types/db';
 import { ColumnDef } from '@tanstack/react-table';
 import { formatTimestamp } from '@/lib/utils';
 import { Settings2, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { DeleteSize } from '../DeleteSize';
 import { useState } from 'react';
 import { EditSize } from '../EditSize';
+import { Size } from '@/types/size';
 
 export const columns: ColumnDef<Size>[] = [
 	{
@@ -16,7 +15,7 @@ export const columns: ColumnDef<Size>[] = [
 		header: 'Name',
 	},
 	{
-		accessorKey: 'fullname',
+		accessorKey: '',
 		header: 'Full Name',
 	},
 	{

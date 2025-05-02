@@ -19,7 +19,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { CategoryState, updateCategory } from '@/actions/category-action';
-import { Category } from '@/types/db';
+import { Category } from '@/types/category';
+import ErrorMessage from '../ErrorMessage';
 
 export function EditCategory({
 	open,
@@ -39,7 +40,7 @@ export function EditCategory({
 	useEffect(() => {
 		if (state === undefined) {
 			setopen(false);
-			toast({ description: 'Category data created successfully.' });
+			toast({ description: 'Category data updated successfully.' });
 		}
 	}, [state, setopen]);
 
@@ -79,23 +80,13 @@ export function EditCategory({
 								)}
 							/>
 						</div>
-						{state?.errors?.name &&
-							state.errors.name.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.name} />
 					</div>
 
 					<DialogFooter>
-						{(state?.message || state?.errors) && (
-							<p className='text-sm font-medium text-destructive mr-auto'>
-								{state.message}
-							</p>
-						)}
+						<ErrorMessage
+							errors={state?.message ? [state?.message] : undefined}
+						/>
 						<PendingButton />
 					</DialogFooter>
 				</form>

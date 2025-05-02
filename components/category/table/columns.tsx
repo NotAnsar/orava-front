@@ -1,6 +1,6 @@
 'use client';
 
-import { Category } from '@/types/db';
+import { Category } from '@/types/category';
 import { ColumnDef } from '@tanstack/react-table';
 import { formatTimestamp } from '@/lib/utils';
 import { Settings2, Trash2 } from 'lucide-react';

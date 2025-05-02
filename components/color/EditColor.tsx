@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { ColorState, updateColor } from '@/actions/color-action';
-import { Color } from '@/types/db';
+import { Color } from '@/types/color';
 
 export function EditColor({
 	open,

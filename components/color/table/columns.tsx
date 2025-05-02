@@ -1,14 +1,13 @@
 'use client';
 
-import { Color } from '@/types/db';
 import { ColumnDef } from '@tanstack/react-table';
 import { formatTimestamp } from '@/lib/utils';
-import { Delete, Settings2, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Settings2, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { DeleteColor } from '../DeleteColor';
 import { useState } from 'react';
 import { EditColor } from '../EditColor';
+import { Color } from '@/types/color';
 
 export const columns: ColumnDef<Color>[] = [
 	{

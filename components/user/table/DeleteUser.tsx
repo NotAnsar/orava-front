@@ -8,12 +8,11 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '../../ui/use-toast';
-
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '../../ui/button';
 import { Loader } from 'lucide-react';
-import { DeleteUserState, deleteUser } from '@/actions/user-action';
+import { deleteUser } from '@/actions/user-action';
 
 export const DeleteUser = ({
 	id,
@@ -24,15 +23,14 @@ export const DeleteUser = ({
 	open: boolean;
 	setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-	const initialState: DeleteUserState = { message: null, type: null };
-	const [state, action] = useFormState(deleteUser.bind(null, id), initialState);
+	const [state, action] = useFormState(deleteUser.bind(null, id), {});
 
 	useEffect(() => {
 		if (state.message) {
 			setOpen(false);
 			toast({
 				description: state.message,
-				variant: state.type === 'error' ? 'destructive' : 'default',
+				variant: state.success ? 'default' : 'destructive',
 			});
 		}
 	}, [state, setOpen]);

@@ -3,11 +3,11 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '../../ui/button';
-import { Archive, ArrowUpDown, Shield, ShieldCheck } from 'lucide-react';
+import { ArrowUpDown, Shield, ShieldCheck } from 'lucide-react';
 import Badge from '../../Badge';
 import ActionCell from './ActionCell';
 import { User } from '@/types/user';
-import { cn, formatTimestamp } from '@/lib/utils';
+import { formatTimestamp } from '@/lib/utils';
 
 export const columns: ColumnDef<User>[] = [
 	{

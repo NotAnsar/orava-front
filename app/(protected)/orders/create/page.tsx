@@ -1,7 +1,8 @@
 import { fetchProducts } from '@/lib/product';
 import CreateOrderForm from './CreateOrderForm';
-import { fetchUsers } from '@/lib/user';
+
 import React from 'react';
+import { fetchUsers } from '@/api/users';
 
 export default async function page() {
 	const [users, products] = await Promise.all([
