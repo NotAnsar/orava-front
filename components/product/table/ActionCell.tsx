@@ -15,12 +15,7 @@ import { Dialog } from '@radix-ui/react-dialog';
 import Link from 'next/link';
 import { DeleteProduct } from './DeleteProduct';
 
-export default function ActionCell({
-	product,
-	...props
-}: {
-	product: ProductALL;
-}) {
+export default function ActionCell({ id }: { id: string }) {
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
 	return (
@@ -33,17 +28,12 @@ export default function ActionCell({
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align='end'>
-					<DropdownMenuItem
-						onClick={() => navigator.clipboard.writeText(product.id)}
-					>
+					<DropdownMenuItem onClick={() => navigator.clipboard.writeText(id)}>
 						Copy product ID
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem className='p-0'>
-						<Link
-							href={`/products/edit/${product.id}`}
-							className='px-2 py-1.5 w-full'
-						>
+						<Link href={`/products/edit/${id}`} className='px-2 py-1.5 w-full'>
 							Edit Product
 						</Link>
 					</DropdownMenuItem>
@@ -57,7 +47,7 @@ export default function ActionCell({
 			</DropdownMenu>
 
 			<DeleteProduct
-				id={product.id}
+				id={id}
 				open={isDeleteDialogOpen}
 				setOpen={setIsDeleteDialogOpen}
 			/>

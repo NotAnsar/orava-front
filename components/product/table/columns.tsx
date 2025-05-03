@@ -1,6 +1,5 @@
 'use client';
 
-import { Category, Color, ProductALL, Size } from '@/types/db';
 import { ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '../../ui/button';
@@ -19,8 +18,12 @@ import {
 } from '../../ui/dropdown-menu';
 import Badge from '../../Badge';
 import ActionCell from './ActionCell';
+import { Product } from '@/types/product';
+import { Category } from '@/types/category';
+import { Color } from '@/types/color';
+import { Size } from '@/types/size';
 
-export const columns: ColumnDef<ProductALL>[] = [
+export const columns: ColumnDef<Product>[] = [
 	{
 		accessorKey: 'name',
 		header: 'Name',
@@ -79,7 +82,7 @@ export const columns: ColumnDef<ProductALL>[] = [
 	},
 	{
 		accessorKey: 'category',
-		header: 'category',
+		header: 'Category',
 		cell: ({ row }) => {
 			const category: Category = row.getValue('category');
 
@@ -88,24 +91,24 @@ export const columns: ColumnDef<ProductALL>[] = [
 		filterFn: (row, key, searchValue) => {
 			const category: Category = row.getValue(key);
 
-			return category.id === searchValue;
+			return category?.id === searchValue;
 		},
 	},
 
 	{
-		accessorKey: 'colors',
+		accessorKey: 'color',
 		header: 'Color',
 		cell: ({ row }) => {
-			const color: Color = row.getValue('colors');
-			return <div>{color.name}</div>;
+			const color: Color = row.getValue('color');
+			return <div>{color?.name}</div>;
 		},
 	},
 	{
-		accessorKey: 'sizes',
+		accessorKey: 'size',
 		header: 'Size',
 		cell: ({ row }) => {
-			const size: Size = row.getValue('sizes');
-			return <div>{size.name}</div>;
+			const size: Size = row.getValue('size');
+			return <div>{size?.name}</div>;
 		},
 	},
 	{
@@ -170,6 +173,6 @@ export const columns: ColumnDef<ProductALL>[] = [
 	{
 		id: 'actions',
 		enableHiding: false,
-		cell: ({ row }) => <ActionCell product={row.original} />,
+		cell: ({ row }) => <ActionCell id={row.original.id} />,
 	},
 ];
