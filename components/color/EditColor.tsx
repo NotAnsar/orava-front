@@ -8,8 +8,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Edit, Loader, Plus } from 'lucide-react';
+import { Dispatch, SetStateAction, useEffect } from 'react';
+import { Edit, Loader } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { useFormState } from 'react-dom';
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 
 import { ColorState, updateColor } from '@/actions/color-action';
 import { Color } from '@/types/color';
+import ErrorMessage from '../ErrorMessage';
 
 export function EditColor({
 	open,
@@ -50,7 +51,7 @@ export function EditColor({
 					<DialogTitle>Edit Color</DialogTitle>
 					<DialogDescription>
 						{
-							"Update a Color Enter the color details below and click 'Save' when you're done."
+							"Update color information. Enter the color details and click save when you're done."
 						}
 					</DialogDescription>
 				</DialogHeader>
@@ -59,7 +60,7 @@ export function EditColor({
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
-								htmlFor='fname'
+								htmlFor='name'
 								className={cn(
 									'text-nowrap',
 									state?.errors?.name ? 'text-destructive' : ''
@@ -79,16 +80,9 @@ export function EditColor({
 								)}
 							/>
 						</div>
-						{state?.errors?.name &&
-							state.errors.name.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.name} />
 					</div>
+
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
@@ -103,7 +97,7 @@ export function EditColor({
 							<Input
 								id='value'
 								name='value'
-								defaultValue={color.value || undefined}
+								defaultValue={color.value}
 								className={cn(
 									'bg-transparent col-span-3',
 									state?.errors?.value
@@ -112,23 +106,13 @@ export function EditColor({
 								)}
 							/>
 						</div>
-						{state?.errors?.value &&
-							state.errors.value.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.value} />
 					</div>
 
 					<DialogFooter>
-						{(state?.message || state?.errors) && (
-							<p className='text-sm font-medium text-destructive mr-auto'>
-								{state.message}
-							</p>
-						)}
+						<ErrorMessage
+							errors={state?.message ? [state?.message] : undefined}
+						/>
 						<PendingButton />
 					</DialogFooter>
 				</form>
@@ -147,7 +131,7 @@ function PendingButton() {
 			) : (
 				<Edit className='mr-2 h-4 w-4' />
 			)}
-			Edit Color
+			Update Color
 		</Button>
 	);
 }

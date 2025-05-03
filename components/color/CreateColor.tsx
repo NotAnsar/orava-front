@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { ColorState, createColor } from '@/actions/color-action';
+import ErrorMessage from '../ErrorMessage';
 
 export function CreateColor({
 	open,
@@ -53,7 +54,7 @@ export function CreateColor({
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
-								htmlFor='fname'
+								htmlFor='name'
 								className={cn(
 									'text-nowrap',
 									state?.errors?.name ? 'text-destructive' : ''
@@ -72,16 +73,9 @@ export function CreateColor({
 								)}
 							/>
 						</div>
-						{state?.errors?.name &&
-							state.errors.name.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.name} />
 					</div>
+
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
@@ -96,6 +90,7 @@ export function CreateColor({
 							<Input
 								id='value'
 								name='value'
+								placeholder='#FFFFFF'
 								className={cn(
 									'bg-transparent col-span-3',
 									state?.errors?.value
@@ -104,23 +99,13 @@ export function CreateColor({
 								)}
 							/>
 						</div>
-						{state?.errors?.value &&
-							state.errors.value.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.value} />
 					</div>
 
 					<DialogFooter>
-						{(state?.message || state?.errors) && (
-							<p className='text-sm font-medium text-destructive mr-auto'>
-								{state.message}
-							</p>
-						)}
+						<ErrorMessage
+							errors={state?.message ? [state?.message] : undefined}
+						/>
 						<PendingButton />
 					</DialogFooter>
 				</form>

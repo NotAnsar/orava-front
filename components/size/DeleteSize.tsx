@@ -12,7 +12,7 @@ import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '../ui/button';
 import { Loader } from 'lucide-react';
-import { DeleteSizeState, deleteSize } from '@/actions/size-action';
+import { deleteSize } from '@/actions/size-action';
 
 export const DeleteSize = ({
 	id,
@@ -23,16 +23,14 @@ export const DeleteSize = ({
 	open: boolean;
 	setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-	const initialState: DeleteSizeState = { message: null, type: null };
-
-	const [state, action] = useFormState(deleteSize.bind(null, id), initialState);
+	const [state, action] = useFormState(deleteSize.bind(null, id), {});
 
 	useEffect(() => {
 		if (state.message) {
 			setOpen(false);
 			toast({
 				description: state.message,
-				variant: state.type === 'error' ? 'destructive' : 'default',
+				variant: state.success ? 'default' : 'destructive',
 			});
 		}
 	}, [state, setOpen]);

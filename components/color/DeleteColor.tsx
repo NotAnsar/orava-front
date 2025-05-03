@@ -12,7 +12,7 @@ import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '../ui/button';
 import { Loader } from 'lucide-react';
-import { DeleteColorState, deleteColor } from '@/actions/color-action';
+import { deleteColor } from '@/actions/color-action';
 
 export const DeleteColor = ({
 	id,
@@ -23,19 +23,14 @@ export const DeleteColor = ({
 	open: boolean;
 	setOpen: Dispatch<SetStateAction<boolean>>;
 }) => {
-	const initialState: DeleteColorState = { message: null, type: null };
-
-	const [state, action] = useFormState(
-		deleteColor.bind(null, id),
-		initialState
-	);
+	const [state, action] = useFormState(deleteColor.bind(null, id), {});
 
 	useEffect(() => {
 		if (state.message) {
 			setOpen(false);
 			toast({
 				description: state.message,
-				variant: state.type === 'error' ? 'destructive' : 'default',
+				variant: state.success ? 'default' : 'destructive',
 			});
 		}
 	}, [state, setOpen]);

@@ -2,12 +2,15 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { DeleteState, State } from './utils';
+import axiosInstance from '@/lib/axios';
+import { COLOR_API } from '@/types/color';
 
 const formSchema = z.object({
 	name: z
 		.string()
-		.min(1, 'Color Name is required')
-		.max(50, 'Color Name must be at most 50 characters'),
+		.min(1, { message: 'Color Name is required' })
+		.max(50, { message: 'Color Name must be at most 50 characters' }),
 	value: z
 		.string()
 		.regex(
@@ -16,40 +19,13 @@ const formSchema = z.object({
 		),
 });
 
-export type ColorState =
-	| {
-			errors?: {
-				name?: string[];
-				value?: string[];
-			};
-			message?: string | null;
-	  }
-	| undefined;
+type ColorData = z.infer<typeof formSchema>;
+export type ColorState = State<ColorData> | undefined;
 
-// In-memory storage for dummy colors
-let dummyColors = [
-	{
-		id: '1',
-		name: 'Red',
-		value: '#FF0000',
-		createdAt: new Date().toISOString(),
-	},
-	{
-		id: '2',
-		name: 'Blue',
-		value: '#0000FF',
-		createdAt: new Date().toISOString(),
-	},
-	{
-		id: '3',
-		name: 'Black',
-		value: '#000000',
-		createdAt: new Date().toISOString(),
-	},
-];
-let colorId = 4; // Starting ID for new colors
-
-export async function createColor(prevState: ColorState, formData: FormData) {
+export async function createColor(
+	prevState: ColorState,
+	formData: FormData
+): Promise<ColorState> {
 	const validatedFields = formSchema.safeParse({
 		name: formData.get('name'),
 		value: formData.get('value'),
@@ -64,30 +40,47 @@ export async function createColor(prevState: ColorState, formData: FormData) {
 
 	const { name, value } = validatedFields.data;
 	try {
-		// Create a new color in our dummy data
-		const newColor = {
-			id: String(colorId++),
-			name,
-			value,
-			createdAt: new Date().toISOString(),
-		};
+		// Create the color via API
+		const response = await axiosInstance.post(COLOR_API, { name, value });
 
-		dummyColors.push(newColor);
-		console.log('Color created:', newColor);
-	} catch (error) {
+		if (!response.data || !response.data.success) {
+			throw new Error('Failed to create color.');
+		}
+	} catch (error: any) {
 		console.error(error);
-		return { message: 'Error: Failed to Create Product Color.' };
+
+		// Handle the API error format
+		if (error.response?.data) {
+			const apiError = error.response.data;
+
+			if (!apiError.success && apiError.errors) {
+				// Map API field errors to our error format
+				const fieldErrors: Record<string, string[]> = {};
+
+				for (const [field, message] of Object.entries(apiError.errors)) {
+					fieldErrors[field] = [message as string];
+				}
+
+				return {
+					errors: fieldErrors,
+					message: apiError.message || 'Failed to create color.',
+				};
+			}
+
+			return { message: apiError.message || 'Failed to create color.' };
+		}
+
+		return { message: error.message || 'Error: Failed to create color.' };
 	}
 
-	revalidatePath('/categories', 'layout');
-	return { message: 'Color created successfully.' };
+	revalidatePath('/colors', 'layout');
 }
 
 export async function updateColor(
 	id: string,
 	prevState: ColorState,
 	formData: FormData
-) {
+): Promise<ColorState> {
 	const validatedFields = formSchema.safeParse({
 		name: formData.get('name'),
 		value: formData.get('value'),
@@ -102,55 +95,73 @@ export async function updateColor(
 
 	const { name, value } = validatedFields.data;
 	try {
-		// Find and update color in dummy data
-		const colorIndex = dummyColors.findIndex((color) => color.id === id);
-		if (colorIndex !== -1) {
-			dummyColors[colorIndex] = {
-				...dummyColors[colorIndex],
-				name,
-				value,
-			};
-			console.log('Color updated:', dummyColors[colorIndex]);
-		} else {
-			throw new Error(`Color with ID ${id} not found`);
+		// Update the color via API
+		const response = await axiosInstance.patch(`${COLOR_API}/${id}`, {
+			name,
+			value,
+		});
+
+		if (!response.data || !response.data.success) {
+			throw new Error('Failed to update color.');
 		}
-	} catch (error) {
+	} catch (error: any) {
 		console.error(error);
-		return {
-			message: `Error: Failed to Update Product Color. ${
-				(error as Error).message
-			}`,
-		};
+
+		// Handle the API error format
+		if (error.response?.data) {
+			const apiError = error.response.data;
+
+			if (!apiError.success && apiError.errors) {
+				// Map API field errors to our error format
+				const fieldErrors: Record<string, string[]> = {};
+
+				for (const [field, message] of Object.entries(apiError.errors)) {
+					fieldErrors[field] = [message as string];
+				}
+
+				return {
+					errors: fieldErrors,
+					message: apiError.message || 'Failed to update color.',
+				};
+			}
+
+			return { message: apiError.message || 'Failed to update color.' };
+		}
+
+		return { message: error.message || 'Error: Failed to update color.' };
 	}
 
-	revalidatePath('/categories', 'layout');
-	return { message: 'Color updated successfully.' };
+	revalidatePath('/colors', 'layout');
 }
 
-export type DeleteColorState = {
-	message?: string | null;
-	type?: string | null;
-};
-
-export async function deleteColor(id: string) {
+export async function deleteColor(id: string): Promise<DeleteState> {
 	try {
-		// Filter out the color to be deleted
-		const initialLength = dummyColors.length;
-		dummyColors = dummyColors.filter((color) => color.id !== id);
+		// Delete the color via API
+		const response = await axiosInstance.delete(`${COLOR_API}/${id}`);
 
-		if (dummyColors.length === initialLength) {
-			throw new Error(`Color with ID ${id} not found`);
+		if (response.data && !response.data.success) {
+			return {
+				message: response.data.message || 'Failed to delete color.',
+				success: false,
+			};
+		}
+	} catch (error: any) {
+		if (error.response?.data) {
+			return {
+				message: error.response.data.message || 'Failed to delete color.',
+				success: false,
+			};
 		}
 
-		console.log(`Color ${id} deleted`);
-	} catch (error) {
-		console.error(error);
 		return {
-			message: `Failed to delete color: ${(error as Error).message}`,
-			type: 'error',
+			message: error.message || 'Failed to delete color.',
+			success: false,
 		};
 	}
 
-	revalidatePath('/categories', 'layout');
-	return { message: 'Product Color Was Deleted Successfully.' };
+	revalidatePath('/colors', 'layout');
+	return {
+		message: 'Product Color Was Deleted Successfully.',
+		success: true,
+	};
 }

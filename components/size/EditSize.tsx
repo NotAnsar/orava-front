@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 
 import { SizeState, updateSize } from '@/actions/size-action';
 import { Size } from '@/types/size';
+import ErrorMessage from '../ErrorMessage';
 
 export function EditSize({
 	open,
@@ -50,7 +51,7 @@ export function EditSize({
 					<DialogTitle>Edit Size</DialogTitle>
 					<DialogDescription>
 						{
-							"Update a Size Enter the size details below and click 'Save' when you're done."
+							"Update size information. Enter the size details and click save when you're done."
 						}
 					</DialogDescription>
 				</DialogHeader>
@@ -59,13 +60,13 @@ export function EditSize({
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
-								htmlFor='fname'
+								htmlFor='name'
 								className={cn(
 									'text-nowrap',
 									state?.errors?.name ? 'text-destructive' : ''
 								)}
 							>
-								Size Name
+								Size Code
 							</Label>
 							<Input
 								id='name'
@@ -79,16 +80,9 @@ export function EditSize({
 								)}
 							/>
 						</div>
-						{state?.errors?.name &&
-							state.errors.name.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.name} />
 					</div>
+
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
@@ -98,12 +92,12 @@ export function EditSize({
 									state?.errors?.fullname ? 'text-destructive' : ''
 								)}
 							>
-								Size Fullname
+								Full Name
 							</Label>
 							<Input
 								id='fullname'
 								name='fullname'
-								defaultValue={size?.fullname || undefined}
+								defaultValue={size.fullname || undefined}
 								className={cn(
 									'bg-transparent col-span-3',
 									state?.errors?.fullname
@@ -112,23 +106,13 @@ export function EditSize({
 								)}
 							/>
 						</div>
-						{state?.errors?.fullname &&
-							state.errors.fullname.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.fullname} />
 					</div>
 
 					<DialogFooter>
-						{(state?.message || state?.errors) && (
-							<p className='text-sm font-medium text-destructive mr-auto'>
-								{state.message}
-							</p>
-						)}
+						<ErrorMessage
+							errors={state?.message ? [state?.message] : undefined}
+						/>
 						<PendingButton />
 					</DialogFooter>
 				</form>
@@ -147,7 +131,7 @@ function PendingButton() {
 			) : (
 				<Edit className='mr-2 h-4 w-4' />
 			)}
-			Edit Size
+			Update Size
 		</Button>
 	);
 }

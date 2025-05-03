@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { SizeState, createSize } from '@/actions/size-action';
+import ErrorMessage from '../ErrorMessage';
 
 export function CreateSize({
 	open,
@@ -53,17 +54,18 @@ export function CreateSize({
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
-								htmlFor='fname'
+								htmlFor='name'
 								className={cn(
 									'text-nowrap',
 									state?.errors?.name ? 'text-destructive' : ''
 								)}
 							>
-								Size Name
+								Size Code
 							</Label>
 							<Input
 								id='name'
 								name='name'
+								placeholder='XL'
 								className={cn(
 									'bg-transparent col-span-3',
 									state?.errors?.name
@@ -72,16 +74,9 @@ export function CreateSize({
 								)}
 							/>
 						</div>
-						{state?.errors?.name &&
-							state.errors.name.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.name} />
 					</div>
+
 					<div>
 						<div className='flex items-center gap-4'>
 							<Label
@@ -91,11 +86,12 @@ export function CreateSize({
 									state?.errors?.fullname ? 'text-destructive' : ''
 								)}
 							>
-								Size Fullname
+								Full Name
 							</Label>
 							<Input
 								id='fullname'
 								name='fullname'
+								placeholder='Extra Large'
 								className={cn(
 									'bg-transparent col-span-3',
 									state?.errors?.fullname
@@ -104,23 +100,13 @@ export function CreateSize({
 								)}
 							/>
 						</div>
-						{state?.errors?.fullname &&
-							state.errors.fullname.map((error: string) => (
-								<p
-									className='text-sm font-medium text-destructive col-span-full mt-2'
-									key={error}
-								>
-									{error}
-								</p>
-							))}
+						<ErrorMessage errors={state?.errors?.fullname} />
 					</div>
 
 					<DialogFooter>
-						{(state?.message || state?.errors) && (
-							<p className='text-sm font-medium text-destructive mr-auto'>
-								{state.message}
-							</p>
-						)}
+						<ErrorMessage
+							errors={state?.message ? [state?.message] : undefined}
+						/>
 						<PendingButton />
 					</DialogFooter>
 				</form>

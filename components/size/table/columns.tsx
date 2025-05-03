@@ -15,7 +15,7 @@ export const columns: ColumnDef<Size>[] = [
 		header: 'Name',
 	},
 	{
-		accessorKey: '',
+		accessorKey: 'fullname',
 		header: 'Full Name',
 	},
 	{
