@@ -1,6 +1,6 @@
 'use client';
 
-import { OrderWithItems } from '@/types/db';
+import { Order } from '@/types/order';
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '../../ui/button';
 import {
@@ -16,10 +16,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatTimestamp } from '@/lib/utils';
 import ActionCell from './ActionCell';
 
-export const columns: ColumnDef<OrderWithItems>[] = [
+export const columns: ColumnDef<Order>[] = [
 	{
-		accessorKey: 'user_name',
-		accessorFn: (row) => row.user.firstName + ' ' + row.user.lastName,
+		accessorKey: 'userName',
+		accessorFn: (row) => row.userName,
 		enableHiding: false,
 		header: ({ column }) => {
 			return (
@@ -34,30 +34,28 @@ export const columns: ColumnDef<OrderWithItems>[] = [
 			);
 		},
 		cell: ({ row }) => {
-			const user = row.original.user;
+			const { userName, userEmail } = row.original;
 
 			return (
 				<div className='flex items-center gap-4 '>
 					<Avatar className='hidden h-9 w-9 sm:flex'>
 						<AvatarFallback>
 							{generateAvatarFallback(
-								user?.firstName || '',
-								user?.lastName || ''
+								userName.split(' ')[0],
+								userName.split(' ')[1]
 							)}
 						</AvatarFallback>
 					</Avatar>
 					<div className='grid gap-1'>
-						<p className='text-sm font-medium leading-none'>
-							{user?.firstName} {user?.lastName}
-						</p>
-						<p className='text-sm text-muted-foreground'>{user?.email}</p>
+						<p className='text-sm font-medium leading-none'>{userName}</p>
+						<p className='text-sm text-muted-foreground'>{userEmail}</p>
 					</div>
 				</div>
 			);
 		},
 	},
 	{
-		accessorKey: 'user',
+		accessorKey: 'items',
 		enableHiding: false,
 		header: ({ column }) => {
 			return (
@@ -72,13 +70,13 @@ export const columns: ColumnDef<OrderWithItems>[] = [
 			);
 		},
 		cell: ({ row }) => {
-			const order_Items = row.original.order_Items;
+			const order_Items = row.original.items;
 
 			return (
 				<div className='grid gap-1'>
 					{order_Items.map((item) => (
 						<p className='text-sm font-medium leading-none' key={item.id}>
-							{item.product.name}
+							{item.productName}
 							<span className='text-muted-foreground'>{' * '}</span>
 							{item.quantity}
 						</p>
@@ -116,25 +114,25 @@ export const columns: ColumnDef<OrderWithItems>[] = [
 		accessorKey: 'status',
 		header: 'Status',
 		cell: ({ row }) => {
-			const status = row.getValue('status') as string;
+			const status = row.original.status;
 
 			let variant: 'success' | 'error' | 'archive' | 'admin';
 			let IconComponent;
 			switch (status) {
-				case 'pending':
+				case 'PENDING':
 					variant = 'archive';
 					IconComponent = RefreshCcw;
 					break;
-				case 'shipped':
+				case 'SHIPPED':
 					variant = 'admin';
 					IconComponent = ArrowUpDown;
 
 					break;
-				case 'delivered':
+				case 'DELIVERED':
 					variant = 'success';
 					IconComponent = ShieldCheck;
 					break;
-				case 'canceled':
+				case 'CANCELED':
 					variant = 'error';
 					IconComponent = Archive;
 					break;

@@ -10,7 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { statusEnumValues } from '@/types/db';
+import { statusEnumValues } from '@/types/order';
 
 export default function FilterTable<TData>({ table }: { table: Table<TData> }) {
 	return (
@@ -34,8 +34,8 @@ export default function FilterTable<TData>({ table }: { table: Table<TData> }) {
 					</SelectTrigger>
 					<SelectContent className='w-full text-sm'>
 						{statusEnumValues.map((c) => (
-							<SelectItem key={c} value={c}>
-								{c}
+							<SelectItem key={c.value} value={c.value}>
+								{c.label}
 							</SelectItem>
 						))}
 					</SelectContent>

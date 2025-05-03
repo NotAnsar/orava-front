@@ -1,5 +1,5 @@
 'use client';
-import { OrderWithItems, ProductALL } from '@/types/db';
+
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,16 +14,12 @@ import { useState } from 'react';
 import { Dialog } from '@radix-ui/react-dialog';
 import Link from 'next/link';
 import { DeleteOrder } from './DeleteOrder';
+import { Order } from '@/types/order';
 
-export default function ActionCell({
-	order,
-	...props
-}: {
-	order: OrderWithItems;
-}) {
+export default function ActionCell({ order, ...props }: { order: Order }) {
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-	const { id, user_id } = order;
+	const { id, userId } = order;
 
 	return (
 		<Dialog>
@@ -39,7 +35,7 @@ export default function ActionCell({
 						Copy Order ID
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => navigator.clipboard.writeText(user_id)}
+						onClick={() => navigator.clipboard.writeText(userId)}
 					>
 						Copy User ID
 					</DropdownMenuItem>

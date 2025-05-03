@@ -1,7 +1,7 @@
 import { columns } from '@/components/order/table/columns';
 import { DataTable } from '@/components/order/table/data-table';
 import { buttonVariants } from '@/components/ui/button';
-import { fetchOrders } from '@/lib/order';
+import { fetchOrders } from '@/api/orders';
 import Link from 'next/link';
 
 export default async function Orders() {
