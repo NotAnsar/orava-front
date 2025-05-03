@@ -1,10 +1,17 @@
 import AnalyticCards, {
 	AnalyticCardsSkeleton,
 } from '@/components/dashboard/AnalyticCards';
-import BarChartRevenue from '@/components/dashboard/BarChartRevenue';
-import InventoryAlert from '@/components/dashboard/InventoryAlert';
-import PieChartCategories from '@/components/dashboard/PieChartCategories';
-import RecentSales from '@/components/dashboard/RecentSales';
+import { BarChartRevenueSkeleton } from '@/components/dashboard/BarChartRevenue';
+import BarChartServer from '@/components/dashboard/BarChartServer';
+
+import InventoryAlert, {
+	InventoryAlertSkeleton,
+} from '@/components/dashboard/InventoryAlert';
+import { PieChartCategoriesSkeleton } from '@/components/dashboard/PieChartCategories';
+import PieChartServer from '@/components/dashboard/PieChartServer';
+import RecentSales, {
+	RecentSalesSkeleton,
+} from '@/components/dashboard/RecentSales';
 
 import { Suspense } from 'react';
 
@@ -17,12 +24,22 @@ export default async function Home() {
 				</Suspense>
 			</div>
 			<div className='grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-5'>
-				<BarChartRevenue className='xl:col-span-3' />
-				<RecentSales className='xl:col-span-2' />
+				<Suspense
+					fallback={<BarChartRevenueSkeleton className='xl:col-span-3' />}
+				>
+					<BarChartServer />
+				</Suspense>
+				<Suspense fallback={<RecentSalesSkeleton />}>
+					<RecentSales />
+				</Suspense>
 			</div>
 			<div className='grid gap-4 md:gap-8 lg:grid-cols-2'>
-				<InventoryAlert />
-				<PieChartCategories />
+				<Suspense fallback={<InventoryAlertSkeleton />}>
+					<InventoryAlert />
+				</Suspense>
+				<Suspense fallback={<PieChartCategoriesSkeleton />}>
+					<PieChartServer />
+				</Suspense>
 			</div>
 		</main>
 	);

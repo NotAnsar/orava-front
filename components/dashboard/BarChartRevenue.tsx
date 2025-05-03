@@ -3,12 +3,21 @@
 import { cn } from '@/lib/utils';
 import { BarChart } from '@tremor/react';
 import { Card, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Skeleton } from '../ui/skeleton';
 
-export default function BarChartRevenue({ className }: { className?: string }) {
+export default function BarChartRevenue({
+	className,
+	data,
+}: {
+	className?: string;
+	data: { date: string; Sales: number }[];
+}) {
 	return (
-		<Card className={cn('rounded-lg flex flex-col gap-2', className)}>
+		<Card
+			className={cn('r</CardHeader>ounded-lg flex flex-col gap-2', className)}
+		>
 			<CardHeader className='px-4 md:px-6'>
-				<CardTitle className='dark:text-foreground text-foreground text-2xl font-semibold leading-none tracking-tight flex justify-between items-end '>
+				<CardTitle className='dark:text-foreground text-foregrou</CardTitle>nd text-2xl font-semibold leading-none tracking-tight flex justify-between items-end '>
 					Revenue for Last Months
 				</CardTitle>
 				<CardDescription className='dark:text-muted-foreground text-muted-foreground text-sm mt-2'>
@@ -19,7 +28,7 @@ export default function BarChartRevenue({ className }: { className?: string }) {
 
 			<BarChart
 				className='h-56 sm:h-80 lg:h-full px-4 sm:px-6 pb-6'
-				data={chartdata}
+				data={data}
 				index='date'
 				showAnimation={true}
 				categories={['Sales']}
@@ -31,15 +40,6 @@ export default function BarChartRevenue({ className }: { className?: string }) {
 	);
 }
 
-const chartdata = [
-	{ date: 'Jan', Sales: 2500 },
-	{ date: 'Feb', Sales: 2400 },
-	{ date: 'Mar', Sales: 2500 },
-	{ date: 'Apr', Sales: 1800 },
-	{ date: 'May', Sales: 1700 },
-	{ date: 'Jun', Sales: 2000 },
-];
-
 function valueFormatter(number: number) {
 	const formatter = new Intl.NumberFormat('en-US', {
 		maximumFractionDigits: 0,
@@ -50,4 +50,23 @@ function valueFormatter(number: number) {
 	});
 
 	return formatter.format(number);
+}
+
+export function BarChartRevenueSkeleton({ className }: { className?: string }) {
+	return (
+		<Card className={cn('rounded-lg flex flex-col gap-2', className)}>
+			<CardHeader className='px-4 md:px-6'>
+				<CardTitle className='dark:text-foreground text-foreground text-2xl font-semibold leading-none tracking-tight flex justify-between items-end'>
+					<Skeleton className='h-8 w-64' />
+				</CardTitle>
+				<CardDescription className='dark:text-muted-foreground text-muted-foreground text-sm mt-2'>
+					<Skeleton className='h-4 w-full mt-2' />
+				</CardDescription>
+			</CardHeader>
+
+			<div className='h-56 sm:h-80 lg:h-full px-4 sm:px-6 pb-6'>
+				<Skeleton className='h-full w-full' />
+			</div>
+		</Card>
+	);
 }
