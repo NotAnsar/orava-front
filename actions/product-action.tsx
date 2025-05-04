@@ -1,233 +1,266 @@
 'use server';
 
-import { Product } from '@/types/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { productSchema } from '@/lib/productSchema';
+import axiosInstance from '@/lib/axios';
+import { PRODUCT_API } from '@/types/product';
+import { Product } from '@/types/product';
+import { DeleteState, State } from './utils';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const productActionSchema = productSchema.omit({ images: true });
 
-const formSchema = z.object({
-	name: z
-		.string()
-		.min(3, { message: 'Product Name must be at least 3 characters long.' }),
-	description: z.string(),
-	price: z.coerce
-		.number()
-		.positive({ message: 'Price must be a positive number' }),
-	stock: z.coerce
-		.number()
-		.int()
-		.min(0, { message: 'Stock must be a non-negative integer' }),
-	category_id: z.string({
-		message: 'Please provide a valid category identifier.',
-	}),
-	color_id: z.string({ message: 'Please provide a valid color identifier.' }),
-	size_id: z.string({ message: 'Please provide a valid size identifier.' }),
-	archived: z.boolean(),
-	featured: z.boolean(),
-	// Image validation removed for simplicity in dummy implementation
-});
+type ProductData = z.infer<typeof productActionSchema>;
+export type ProductState = State<ProductData>;
 
-export type ProductState =
-	| {
-			errors?: {
-				name?: string[];
-				description?: string[];
-				price?: string[] | undefined;
-				stock?: string[] | undefined;
-				category_id?: string[] | undefined;
-				archived?: string[] | undefined;
-				featured?: string[] | undefined;
-				color_id?: string[] | undefined;
-				size_id?: string[] | undefined;
-			};
-			message?: string | null;
-	  }
-	| undefined;
-
-// In-memory storage for dummy products
-let dummyProducts = [
-	{
-		id: '1',
-		name: 'Classic T-Shirt',
-		description: 'A comfortable cotton t-shirt',
-		price: 29.99,
-		stock: 50,
-		category_id: '1',
-		color_id: '1',
-		size_id: '2',
-		featured: true,
-		archived: false,
-		createdAt: '2023-01-15T00:00:00Z',
-	},
-	{
-		id: '2',
-		name: 'Slim Fit Jeans',
-		description: 'Modern slim fit jeans',
-		price: 59.99,
-		stock: 35,
-		category_id: '2',
-		color_id: '3',
-		size_id: '2',
-		featured: true,
-		archived: false,
-		createdAt: '2023-01-20T00:00:00Z',
-	},
-] as Product[];
-let productId = 3; // Starting ID for new products
-
+/**
+ * Create a new product
+ */
 export async function createProduct(
 	prevState: ProductState,
 	formData: FormData
-) {
-	const validatedFields = formSchema.safeParse({
+): Promise<ProductState> {
+	const validatedFields = productActionSchema.safeParse({
 		name: formData.get('name'),
 		description: formData.get('description'),
-		stock: formData.get('stock'),
-		price: formData.get('price'),
-		color_id: formData.get('color'),
-		category_id: formData.get('category'),
-		size_id: formData.get('size'),
-		featured: formData.get('featured') === 'on',
-		archived: formData.get('status') === 'archived',
+		price: parseFloat(formData.get('price') as string),
+		stock: parseInt(formData.get('stock') as string, 10),
+		color_id: formData.get('color_id'),
+		size_id: formData.get('size_id'),
+		featured: formData.get('featured') === 'true',
+		category_id: formData.get('category_id'),
+		archived: formData.get('archived') === 'true',
 	});
 
 	if (!validatedFields.success) {
 		return {
 			errors: validatedFields.error.flatten().fieldErrors,
-			message: 'Invalid data. Unable to create product.',
+			message: 'Invalid product data. Please check the form fields.',
 		};
-	}
-
-	if (validatedFields.data.archived && validatedFields.data.featured) {
-		return { message: 'Archived products cannot be featured.' };
 	}
 
 	try {
-		// Create a new product in our dummy data
-		const newProduct = {
-			id: String(productId++),
-			...validatedFields.data,
-			description:
-				validatedFields.data.description === ''
-					? null
-					: validatedFields.data.description,
-			createdAt: new Date().toISOString(),
+		const {
+			name,
+			description,
+			price,
+			stock,
+			featured,
+			archived,
+			color_id: colorId,
+			size_id: sizeId,
+			category_id: categoryId,
+		} = validatedFields.data;
+
+		// Format data according to the Java backend expectations
+		const productData = {
+			name,
+			description,
+			price,
+			stock,
+			featured,
+			archived,
+			colorId,
+			sizeId,
+			categoryId,
 		};
 
-		dummyProducts.push(newProduct);
-		console.log('Product created:', newProduct);
+		// Create the product via API
+		const response = await axiosInstance.post(PRODUCT_API, productData);
 
-		// Log any image uploads that would happen
-		const imageFiles = formData.getAll('product_images');
-		if (imageFiles && imageFiles.length > 0) {
-			console.log(
-				`Would upload ${imageFiles.length} images for product ${newProduct.id}`
-			);
+		if (!response.data || !response.data.success) {
+			throw new Error('Failed to create product');
 		}
-	} catch (error) {
+	} catch (error: any) {
 		console.error(error);
-		return { message: 'Error: Failed to Create Product.' };
+
+		// Handle API error format
+		if (error.response?.data) {
+			const apiError = error.response.data;
+
+			if (!apiError.success && apiError.errors) {
+				// Map API field errors to our error format
+				const fieldErrors: Record<string, string[]> = {};
+
+				for (const [field, message] of Object.entries(apiError.errors)) {
+					fieldErrors[field] = [message as string];
+				}
+
+				return {
+					errors: fieldErrors,
+					message: apiError.message || 'Failed to create product.',
+				};
+			}
+
+			return { message: apiError.message || 'Failed to create product.' };
+		}
+
+		return { message: error.message || 'Error: Failed to create product.' };
 	}
 
-	revalidatePath('/products', 'layout');
+	revalidatePath('/products');
 	redirect('/products');
 }
 
+/**
+ * Update an existing product
+ */
 export async function updateProduct(
 	id: string,
 	prevState: ProductState,
 	formData: FormData
-) {
-	const validatedFields = formSchema.safeParse({
+): Promise<ProductState> {
+	const validatedFields = productActionSchema.safeParse({
 		name: formData.get('name'),
 		description: formData.get('description'),
-		stock: formData.get('stock'),
-		price: formData.get('price'),
-		color_id: formData.get('color'),
-		category_id: formData.get('category'),
-		size_id: formData.get('size'),
-		featured: formData.get('featured') === 'on',
-		archived: formData.get('status') === 'archived',
+		price: parseFloat(formData.get('price') as string),
+		stock: parseInt(formData.get('stock') as string, 10),
+		color_id: formData.get('color_id'),
+		size_id: formData.get('size_id'),
+		featured: formData.get('featured') === 'true',
+		category_id: formData.get('category_id'),
+		archived: formData.get('archived') === 'true',
 	});
 
 	if (!validatedFields.success) {
 		return {
 			errors: validatedFields.error.flatten().fieldErrors,
-			message: 'Invalid data. Unable to update product.',
+			message: 'Invalid product data. Please check the form fields.',
 		};
-	}
-
-	if (validatedFields.data.archived && validatedFields.data.featured) {
-		return { message: 'Archived products cannot be featured.' };
 	}
 
 	try {
-		// Find and update product in dummy data
-		const productIndex = dummyProducts.findIndex(
-			(product) => product.id === id
+		const {
+			name,
+			description,
+			price,
+			stock,
+			featured,
+			archived,
+			color_id: colorId,
+			size_id: sizeId,
+			category_id: categoryId,
+		} = validatedFields.data;
+
+		// Format data according to the Java backend expectations
+		const productData = {
+			name,
+			description,
+			price,
+			stock,
+			featured,
+			archived,
+			colorId,
+			sizeId,
+			categoryId,
+		};
+
+		// Update the product via API
+		const response = await axiosInstance.put(
+			`${PRODUCT_API}/${id}`,
+			productData
 		);
 
-		if (productIndex === -1) {
-			throw new Error(`Product with ID ${id} not found`);
+		if (!response.data || !response.data.success) {
+			throw new Error('Failed to update product');
 		}
-
-		dummyProducts[productIndex] = {
-			...dummyProducts[productIndex],
-			...validatedFields.data,
-			description:
-				validatedFields.data.description === ''
-					? null
-					: validatedFields.data.description,
-		};
-
-		console.log('Product updated:', dummyProducts[productIndex]);
-
-		// Log any image uploads that would happen
-		const imageFiles = formData.getAll('product_images');
-		if (imageFiles && imageFiles.length > 0) {
-			console.log(`Would upload ${imageFiles.length} images for product ${id}`);
-		}
-	} catch (error) {
+	} catch (error: any) {
 		console.error(error);
-		return {
-			message: `Error: Failed to Update Product. ${(error as Error).message}`,
-		};
+
+		// Handle API error format
+		if (error.response?.data) {
+			const apiError = error.response.data;
+
+			if (!apiError.success && apiError.errors) {
+				// Map API field errors to our error format
+				const fieldErrors: Record<string, string[]> = {};
+
+				for (const [field, message] of Object.entries(apiError.errors)) {
+					fieldErrors[field] = [message as string];
+				}
+
+				return {
+					errors: fieldErrors,
+					message: apiError.message || 'Failed to update product.',
+				};
+			}
+
+			return { message: apiError.message || 'Failed to update product.' };
+		}
+
+		return { message: error.message || 'Error: Failed to update product.' };
 	}
 
-	revalidatePath('/products', 'layout');
+	revalidatePath('/products');
 	redirect('/products');
 }
 
-export type DeleteProductState = {
-	message?: string | null;
-	type?: string | null;
-};
-
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string): Promise<DeleteState> {
 	try {
-		// Filter out the product to be deleted
-		const initialLength = dummyProducts.length;
-		dummyProducts = dummyProducts.filter((product) => product.id !== id);
+		// Delete the product via API
+		const response = await axiosInstance.delete(`${PRODUCT_API}/${id}`);
 
-		if (dummyProducts.length === initialLength) {
-			throw new Error(`Product with ID ${id} not found`);
+		if (response.data && !response.data.success) {
+			return {
+				message: response.data.message || 'Failed to delete product.',
+				success: false,
+			};
+		}
+	} catch (error: any) {
+		if (error.response?.data) {
+			return {
+				message: error.response.data.message || 'Failed to delete product.',
+				success: false,
+			};
 		}
 
-		console.log(`Product ${id} deleted`);
-		console.log(`Would delete all images for product ${id}`);
-	} catch (error) {
-		console.error(error);
 		return {
-			message: `Failed to delete product: ${(error as Error).message}`,
-			type: 'error',
+			message: error.message || 'Failed to delete product.',
+			success: false,
 		};
 	}
 
 	revalidatePath('/products', 'layout');
 	return {
-		message: 'Product and Associated Images Were Deleted Successfully.',
+		message: 'Product Was Deleted Successfully.',
+		success: true,
+	};
+}
+
+export async function toggleArchiveProduct(id: string): Promise<DeleteState> {
+	try {
+		// Toggle the archive status of the product via API
+		const response = await axiosInstance.patch(
+			`${PRODUCT_API}/${id}/toggle-archive`
+		);
+
+		if (response.data && !response.data.success) {
+			return {
+				message:
+					response.data.message || 'Failed to toggle product archive status.',
+				success: false,
+			};
+		}
+	} catch (error: any) {
+		if (error.response?.data) {
+			return {
+				message:
+					error.response.data.message ||
+					'Failed to toggle product archive status.',
+				success: false,
+			};
+		}
+
+		return {
+			message: error.message || 'Failed to toggle product archive status.',
+			success: false,
+		};
+	}
+
+	revalidatePath('/products', 'layout');
+	return {
+		message: 'Product archive status was toggled successfully.',
+		success: true,
 	};
 }

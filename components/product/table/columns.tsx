@@ -173,6 +173,8 @@ export const columns: ColumnDef<Product>[] = [
 	{
 		id: 'actions',
 		enableHiding: false,
-		cell: ({ row }) => <ActionCell id={row.original.id} />,
+		cell: ({ row }) => (
+			<ActionCell id={row.original.id} archived={row.original.archived} />
+		),
 	},
 ];

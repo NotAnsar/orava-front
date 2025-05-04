@@ -14,9 +14,17 @@ import { useState } from 'react';
 import { Dialog } from '@radix-ui/react-dialog';
 import Link from 'next/link';
 import { DeleteProduct } from './DeleteProduct';
+import { ArchiveProduct } from './ArchiveProduct';
 
-export default function ActionCell({ id }: { id: string }) {
+export default function ActionCell({
+	id,
+	archived,
+}: {
+	id: string;
+	archived: boolean;
+}) {
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
 	return (
 		<Dialog>
@@ -38,6 +46,12 @@ export default function ActionCell({ id }: { id: string }) {
 						</Link>
 					</DropdownMenuItem>
 					<DropdownMenuItem
+						onClick={() => setIsArchiveDialogOpen(true)}
+						className='cursor-pointer'
+					>
+						{archived ? 'Restore Product' : 'Archive Product'}
+					</DropdownMenuItem>
+					<DropdownMenuItem
 						onClick={() => setIsDeleteDialogOpen(true)}
 						className='cursor-pointer'
 					>
@@ -50,6 +64,12 @@ export default function ActionCell({ id }: { id: string }) {
 				id={id}
 				open={isDeleteDialogOpen}
 				setOpen={setIsDeleteDialogOpen}
+			/>
+			<ArchiveProduct
+				id={id}
+				open={isArchiveDialogOpen}
+				setOpen={setIsArchiveDialogOpen}
+				isArchived={archived}
 			/>
 		</Dialog>
 	);

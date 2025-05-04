@@ -8,22 +8,24 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from '../../ui/use-toast';
-import { deleteProduct } from '@/actions/product-action';
+import { toggleArchiveProduct } from '@/actions/product-action';
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '../../ui/button';
 import { Loader } from 'lucide-react';
 
-export const DeleteProduct = ({
+export const ArchiveProduct = ({
 	id,
 	open,
 	setOpen,
+	isArchived,
 }: {
 	id: string;
 	open: boolean;
 	setOpen: Dispatch<SetStateAction<boolean>>;
+	isArchived: boolean;
 }) => {
-	const [state, action] = useFormState(deleteProduct.bind(null, id), {});
+	const [state, action] = useFormState(toggleArchiveProduct.bind(null, id), {});
 
 	useEffect(() => {
 		if (state.message) {
@@ -41,14 +43,15 @@ export const DeleteProduct = ({
 				<AlertDialogHeader>
 					<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
 					<AlertDialogDescription>
-						This action cannot be undone. This will permanently delete your
-						Product and remove your data from our servers.
+						{isArchived
+							? 'This will restore your product from the archives.'
+							: 'This will archive your product. You can restore it later from the archives.'}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<form action={action}>
-						<PendingButton />
+						<PendingButton isArchived={isArchived} />
 					</form>
 				</AlertDialogFooter>
 			</AlertDialogContent>
@@ -56,7 +59,7 @@ export const DeleteProduct = ({
 	);
 };
 
-function PendingButton() {
+function PendingButton({ isArchived }: { isArchived: boolean }) {
 	const { pending } = useFormStatus();
 
 	return (
@@ -64,10 +67,14 @@ function PendingButton() {
 			type='submit'
 			aria-disabled={pending}
 			disabled={pending}
-			className='bg-destructive text-white hover:bg-destructive/90 w-full'
+			className={`${
+				isArchived
+					? 'bg-green-600 hover:bg-green-700'
+					: 'bg-yellow-600 hover:bg-yellow-700'
+			} text-white w-full`}
 		>
 			{pending && <Loader className='mr-2 h-4 w-4 animate-spin' />}
-			Delete
+			{isArchived ? 'Restore' : 'Archive'}
 		</Button>
 	);
 }
