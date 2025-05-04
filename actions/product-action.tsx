@@ -1,18 +1,39 @@
 'use server';
 
+import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { z } from 'zod';
-import { productSchema } from '@/lib/productSchema';
 import axiosInstance from '@/lib/axios';
 import { PRODUCT_API } from '@/types/product';
-import { Product } from '@/types/product';
 import { DeleteState, State } from './utils';
 
-const productActionSchema = productSchema.omit({ images: true });
+const productSchema = z.object({
+	name: z
+		.string()
+		.min(3, { message: 'Product Name must be at least 3 characters long.' }),
+	description: z.string().min(3, {
+		message: 'Product Description must be at least 3 characters long.',
+	}),
+	price: z.coerce
+		.number()
+		.positive({ message: 'Price must be a positive number' }),
+	stock: z.coerce
+		.number()
+		.int()
+		.min(0, { message: 'Stock must be a non-negative integer' }),
+	colorId: z.string({ message: 'Please provide a valid color identifier.' }),
+	sizeId: z.string({ message: 'Please provide a valid size identifier.' }),
+	featured: z.boolean(),
+	categoryId: z.string({
+		message: 'Please provide a valid category identifier.',
+	}),
+	archived: z.boolean(),
+});
 
-type ProductData = z.infer<typeof productActionSchema>;
-export type ProductState = State<ProductData>;
+// You can also export the inferred type if needed
+type ProductSchemaType = z.infer<typeof productSchema>;
+
+export type ProductState = State<ProductSchemaType>;
 
 /**
  * Create a new product
@@ -21,19 +42,32 @@ export async function createProduct(
 	prevState: ProductState,
 	formData: FormData
 ): Promise<ProductState> {
-	const validatedFields = productActionSchema.safeParse({
+	const validatedFields = productSchema.safeParse({
+		name: formData.get('name') || undefined,
+		description: formData.get('description') || undefined,
+		price: parseFloat(formData.get('price') as string),
+		stock: parseInt(formData.get('stock') as string, 10),
+		colorId: formData.get('colorId') || undefined,
+		sizeId: formData.get('sizeId') || undefined,
+		categoryId: formData.get('categoryId') || undefined,
+		featured: formData.get('featured') === 'true',
+		archived: formData.get('archived') === 'true',
+	});
+	console.log({
 		name: formData.get('name'),
 		description: formData.get('description'),
 		price: parseFloat(formData.get('price') as string),
 		stock: parseInt(formData.get('stock') as string, 10),
-		color_id: formData.get('color_id'),
-		size_id: formData.get('size_id'),
+		colorId: formData.get('colorId'),
+		sizeId: formData.get('sizeId'),
+		categoryId: formData.get('categoryId'),
 		featured: formData.get('featured') === 'true',
-		category_id: formData.get('category_id'),
 		archived: formData.get('archived') === 'true',
 	});
 
 	if (!validatedFields.success) {
+		console.log(validatedFields.error.flatten().fieldErrors);
+
 		return {
 			errors: validatedFields.error.flatten().fieldErrors,
 			message: 'Invalid product data. Please check the form fields.',
@@ -48,9 +82,9 @@ export async function createProduct(
 			stock,
 			featured,
 			archived,
-			color_id: colorId,
-			size_id: sizeId,
-			category_id: categoryId,
+			colorId,
+			sizeId,
+			categoryId,
 		} = validatedFields.data;
 
 		// Format data according to the Java backend expectations
@@ -111,15 +145,15 @@ export async function updateProduct(
 	prevState: ProductState,
 	formData: FormData
 ): Promise<ProductState> {
-	const validatedFields = productActionSchema.safeParse({
+	const validatedFields = productSchema.safeParse({
 		name: formData.get('name'),
 		description: formData.get('description'),
 		price: parseFloat(formData.get('price') as string),
 		stock: parseInt(formData.get('stock') as string, 10),
-		color_id: formData.get('color_id'),
-		size_id: formData.get('size_id'),
+		colorId: formData.get('colorId') || undefined,
+		sizeId: formData.get('sizeId') || undefined,
+		categoryId: formData.get('categoryId') || undefined,
 		featured: formData.get('featured') === 'true',
-		category_id: formData.get('category_id'),
 		archived: formData.get('archived') === 'true',
 	});
 
@@ -138,9 +172,9 @@ export async function updateProduct(
 			stock,
 			featured,
 			archived,
-			color_id: colorId,
-			size_id: sizeId,
-			category_id: categoryId,
+			colorId,
+			sizeId,
+			categoryId,
 		} = validatedFields.data;
 
 		// Format data according to the Java backend expectations
@@ -157,7 +191,7 @@ export async function updateProduct(
 		};
 
 		// Update the product via API
-		const response = await axiosInstance.put(
+		const response = await axiosInstance.patch(
 			`${PRODUCT_API}/${id}`,
 			productData
 		);

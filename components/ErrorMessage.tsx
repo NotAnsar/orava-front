@@ -10,14 +10,11 @@ export default function ErrorMessage({
 	classNameParent?: string;
 }) {
 	return (
-		<div className={classNameParent}>
+		<div className={cn('space-y-1', classNameParent)}>
 			{errors &&
 				errors.map((error: string, i) => (
 					<p
-						className={cn(
-							'text-sm font-medium text-destructive mt-1',
-							className
-						)}
+						className={cn('text-sm font-medium text-destructive', className)}
 						key={`${error}_${i}`}
 					>
 						{error}

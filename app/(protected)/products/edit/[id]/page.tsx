@@ -1,10 +1,9 @@
+import { fetchCategories } from '@/api/categories';
+import { fetchColors } from '@/api/colors';
+import { fetchProductById } from '@/api/products';
+import { fetchSizes } from '@/api/sizes';
 import ProductFormClient from '@/components/product/ProductFormClient';
-import {
-	fetchCategories,
-	fetchColors,
-	fetchProductWithImages,
-	fetchSizes,
-} from '@/lib/product';
+
 import { notFound } from 'next/navigation';
 
 export default async function page({
@@ -16,7 +15,7 @@ export default async function page({
 		fetchColors(),
 		fetchSizes(),
 		fetchCategories(),
-		fetchProductWithImages(id),
+		fetchProductById(id),
 	]);
 
 	if (!product) notFound();

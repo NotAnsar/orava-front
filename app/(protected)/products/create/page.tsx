@@ -1,5 +1,7 @@
+import { fetchCategories } from '@/api/categories';
+import { fetchColors } from '@/api/colors';
+import { fetchSizes } from '@/api/sizes';
 import ProductFormClient from '@/components/product/ProductFormClient';
-import { fetchCategories, fetchColors, fetchSizes } from '@/lib/product';
 
 export default async function page() {
 	const [colors, sizes, categories] = await Promise.all([

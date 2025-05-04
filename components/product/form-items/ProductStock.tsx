@@ -1,3 +1,5 @@
+import { ProductState } from '@/actions/product-action';
+import ErrorMessage from '@/components/ErrorMessage';
 import {
 	Card,
 	CardContent,
@@ -6,34 +8,25 @@ import {
 	CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select';
-import { Color, Size } from '@/types/db';
-import { ProductForm } from '../ProductFormClient';
+import { Label } from '@/components/ui/label';
+
+import SelectInput from '@/components/ui/select-input';
+import { SizeToggleGroup } from '@/components/ui/size-toggle-group';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from '@/components/ui/form';
+import { cn } from '@/lib/utils';
+import { Color, Size } from '@/types/db';
+import { Product } from '@/types/product';
 
 export default function ProductStock({
 	colors,
 	sizes,
-	form,
-	isLoading,
+	product,
+	state,
 }: {
-	isLoading: boolean;
-	form: ProductForm;
 	colors: Color[];
 	sizes: Size[];
+	product?: Product;
+	state: ProductState;
 }) {
 	return (
 		<Card x-chunk='dashboard-07-chunk-1'>
@@ -45,111 +38,105 @@ export default function ProductStock({
 			</CardHeader>
 			<CardContent>
 				<div className='grid grid-cols-1 sm:grid-cols-2 lg:flex gap-6 justify-between'>
-					<FormField
-						control={form.control}
-						name='stock'
-						render={({ field }) => (
-							<FormItem className='grid gap-1'>
-								<FormLabel>Stock</FormLabel>
-								<FormControl>
-									<Input
-										{...field}
-										type='number'
-										className='bg-transparent'
-										disabled={isLoading}
-										min={0}
-										required
-										value={field.value ?? ''}
-									/>
-								</FormControl>
+					<div className='grid gap-1.5 h-fit'>
+						<Label
+							htmlFor='stock'
+							className={cn(state?.errors?.stock ? 'text-destructive' : '')}
+						>
+							Stock
+						</Label>
+						<Input
+							id='stock'
+							name='stock'
+							type='number'
+							className={cn(
+								'bg-transparent',
+								state?.errors?.stock
+									? 'border-destructive focus-visible:ring-destructive'
+									: ''
+							)}
+							min={0}
+							required
+							defaultValue={product?.stock || ''}
+						/>
+						<ErrorMessage errors={state?.errors?.stock} />
+					</div>
 
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-					<FormField
-						control={form.control}
-						name='price'
-						render={({ field }) => (
-							<FormItem className='grid gap-1'>
-								<FormLabel>Price</FormLabel>
-								<FormControl>
-									<Input
-										{...field}
-										type='number'
-										className='bg-transparent'
-										disabled={isLoading}
-										min={0.01}
-										required
-										step='any'
-										value={field.value ?? ''}
-									/>
-								</FormControl>
+					<div className='grid gap-1.5 h-fit'>
+						<Label
+							htmlFor='price'
+							className={cn(state?.errors?.price ? 'text-destructive' : '')}
+						>
+							Price
+						</Label>
+						<Input
+							id='price'
+							name='price'
+							type='number'
+							className={cn(
+								'bg-transparent',
+								state?.errors?.price
+									? 'border-destructive focus-visible:ring-destructive'
+									: ''
+							)}
+							min={0.01}
+							step='any'
+							required
+							defaultValue={product?.price || ''}
+						/>
+						<ErrorMessage errors={state?.errors?.price} />
+					</div>
 
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-					<FormField
-						control={form.control}
-						name='color_id'
-						render={({ field }) => (
-							<FormItem className='grid gap-1 lg:w-[180px]'>
-								<FormLabel>Color</FormLabel>
-								<FormControl>
-									<Select
-										required
-										onValueChange={field.onChange}
-										defaultValue={field.value}
-										disabled={isLoading}
-									>
-										<SelectTrigger
-											id='color'
-											aria-label='Select Color'
-											aria-required
-										>
-											<SelectValue placeholder='Select Color' />
-										</SelectTrigger>
-										<SelectContent>
-											{colors.map((color) => (
-												<SelectItem key={color.id} value={color.id}>
-													{color.name}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</FormControl>
+					<div className='grid gap-1.5 lg:w-[180px] h-fit'>
+						<Label
+							htmlFor='colorId'
+							className={cn(state?.errors?.colorId ? 'text-destructive' : '')}
+						>
+							Color
+						</Label>
 
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-					<FormField
-						control={form.control}
-						name='size_id'
-						render={({ field }) => (
-							<FormItem className='grid gap-1 mr-auto'>
-								<FormLabel>Size</FormLabel>
+						<SelectInput
+							options={colors.map((c) => ({ label: c.name, value: c.id }))}
+							name='colorId'
+							initialValue={product?.color.id || undefined}
+							placeholder='Select Color'
+							className={cn(
+								state?.errors?.colorId
+									? 'border-destructive focus-visible:ring-destructive '
+									: ''
+							)}
+						/>
 
-								<ToggleGroup
-									type='single'
-									variant='outline'
-									className='w-full'
-									onValueChange={field.onChange}
-									defaultValue={field.value}
-									disabled={isLoading}
-								>
-									{sizes.map((size) => (
-										<ToggleGroupItem key={size.id} value={size.id}>
-											{size.name}
-										</ToggleGroupItem>
-									))}
-								</ToggleGroup>
+						<ErrorMessage errors={state?.errors?.colorId} />
+					</div>
 
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
+					<div className='grid gap-1.5 mr-auto h-fit'>
+						<Label
+							htmlFor='sizeId'
+							className={cn(state?.errors?.sizeId ? 'text-destructive' : '')}
+						>
+							Size
+						</Label>
+						{/* <ToggleGroup
+							type='single'
+							variant='outline'
+							className='w-full'
+							defaultValue={product?.size.id || undefined}
+						>
+							{sizes.map((size) => (
+								<ToggleGroupItem key={size.id} value={size.id}>
+									{size.name}
+								</ToggleGroupItem>
+							))}
+						</ToggleGroup> */}
+						<SizeToggleGroup
+							options={sizes.map((s) => ({ label: s.name, value: s.id }))}
+							defaultValue={product?.size.id}
+							name='sizeId'
+							error={!!state?.errors?.sizeId}
+						/>
+						<ErrorMessage errors={state?.errors?.sizeId} />
+					</div>
 				</div>
 			</CardContent>
 		</Card>
