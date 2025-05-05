@@ -12,11 +12,10 @@ import {
 } from '../ui/command';
 import { DashItem, dashConfig } from '@/config/sidenav';
 import { useRouter } from 'next/navigation';
-import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 export default function SearchDashboard() {
 	const [open, setOpen] = useState(false);
-	const { management, overview, tools } = dashConfig;
+	const { management, overview } = dashConfig;
 
 	const close = useCallback((command: () => unknown) => {
 		setOpen(false);
@@ -54,7 +53,7 @@ export default function SearchDashboard() {
 					<CommandEmpty>No results found.</CommandEmpty>
 					<CommandGrp heading='Overview' menuGrp={overview} close={close} />
 					<CommandGrp heading='Management' menuGrp={management} close={close} />
-					<CommandGrp heading='Tools' menuGrp={tools} close={close} />
+					{/* <CommandGrp heading='Tools' menuGrp={tools} close={close} /> */}
 				</CommandList>
 			</CommandDialog>
 		</>

@@ -2,12 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Category } from '@/types/db';
 import { ProductState } from '@/actions/product-action';
 import ErrorMessage from '@/components/ErrorMessage';
 import { Label } from '@/components/ui/label';
 import SelectInput from '@/components/ui/select-input';
 import { Product } from '@/types/product';
+import { Category } from '@/types/category';
 
 export default function ProductCategory({
 	categories,

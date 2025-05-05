@@ -25,7 +25,7 @@ import {
 import { useState } from 'react';
 import FilterTable from './FilterTable';
 import PaginationTable from './PaginationTable';
-import { Category } from '@/types/db';
+import { Category } from '@/types/category';
 
 interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];

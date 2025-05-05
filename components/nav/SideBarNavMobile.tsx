@@ -48,7 +48,7 @@ export default function SideBarNavMobile({
 				menuGrp={management}
 				path={path}
 			/>
-			<NavGroup sheet={true} label='Tools' menuGrp={tools} path={path} />
+			{/* <NavGroup sheet={true} label='Tools' menuGrp={tools} path={path} /> */}
 
 			<ModeToggleTrigger>
 				<Button variant={'secondary'} className='mt-auto'>

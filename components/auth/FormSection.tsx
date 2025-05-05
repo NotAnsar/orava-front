@@ -3,7 +3,7 @@
 import { useFormState } from 'react-dom';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { signinAction, SignInState } from '@/actions/auth-action';
+import { signinAction } from '@/actions/auth-action';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import PendingButton from './PendingButton';

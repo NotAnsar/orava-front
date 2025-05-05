@@ -1,11 +1,5 @@
-import {
-	DropdownMenu,
-	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
-	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '../../ui/input';
-import { RotateCcw, Settings2 } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Table } from '@tanstack/react-table';
 import { DataTableBooleanFilter } from './DataTableBooleanFilter';
@@ -16,7 +10,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { Category } from '@/types/db';
+import { Category } from '@/types/category';
 
 export default function FilterTable<TData>({
 	table,

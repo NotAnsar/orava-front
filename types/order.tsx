@@ -21,20 +21,14 @@ export type OrderItem = {
 	subtotal: number;
 };
 
-export type OrderStatus =
-	| 'PENDING'
-	| 'PROCESSING'
-	| 'SHIPPED'
-	| 'DELIVERED'
-	| 'CANCELED';
+export type OrderStatus = 'NEW' | 'PROCESSING' | 'COMPLETED' | 'CANCELED';
 
 export const statusEnumValues: {
 	value: OrderStatus;
 	label: string;
 }[] = [
-	{ value: 'PENDING', label: 'Pending' },
+	{ value: 'NEW', label: 'New' },
 	{ value: 'PROCESSING', label: 'Processing' },
-	{ value: 'SHIPPED', label: 'Shipped' },
-	{ value: 'DELIVERED', label: 'Delivered' },
 	{ value: 'CANCELED', label: 'Canceled' },
+	{ value: 'COMPLETED', label: 'Completed' },
 ];

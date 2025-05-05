@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/table';
 
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import PaginationTable from '@/components/product/table/PaginationTable';
 import FilterTable from './FilterTable';
 

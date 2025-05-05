@@ -18,9 +18,9 @@ export default function FilterTable<TData>({ table }: { table: Table<TData> }) {
 			<Input
 				placeholder='Filter by User Name'
 				className='flex gap-1 w-full lg:w-[270px] '
-				value={(table.getColumn('user_name')?.getFilterValue() as string) ?? ''}
+				value={(table.getColumn('userName')?.getFilterValue() as string) ?? ''}
 				onChange={(event) =>
-					table.getColumn('user_name')?.setFilterValue(event.target.value)
+					table.getColumn('userName')?.setFilterValue(event.target.value)
 				}
 			/>
 

@@ -1,5 +1,5 @@
 'use client';
-import { ProductALL } from '@/types/db';
+
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -9,7 +9,6 @@ import {
 } from '../../ui/dropdown-menu';
 import { Button } from '../../ui/button';
 import { MoreHorizontalIcon } from 'lucide-react';
-
 import { useState } from 'react';
 import { Dialog } from '@radix-ui/react-dialog';
 import Link from 'next/link';

@@ -9,13 +9,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
 import SelectInput from '@/components/ui/select-input';
 import { SizeToggleGroup } from '@/components/ui/size-toggle-group';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
-import { Color, Size } from '@/types/db';
+import { Color } from '@/types/color';
 import { Product } from '@/types/product';
+import { Size } from '@/types/size';
 
 export default function ProductStock({
 	colors,

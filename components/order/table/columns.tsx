@@ -3,18 +3,12 @@
 import { Order } from '@/types/order';
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '../../ui/button';
-import {
-	Archive,
-	ArrowUpDown,
-	Loader,
-	RefreshCcw,
-	ShieldCheck,
-} from 'lucide-react';
-import Badge from '../../Badge';
+import { ArrowUpDown } from 'lucide-react';
+
 import { generateAvatarFallback } from '@/config/dashboard';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatTimestamp } from '@/lib/utils';
-import ActionCell from './ActionCell';
+import StatusCell from './StatusCell';
 
 export const columns: ColumnDef<Order>[] = [
 	{
@@ -113,41 +107,38 @@ export const columns: ColumnDef<Order>[] = [
 	{
 		accessorKey: 'status',
 		header: 'Status',
-		cell: ({ row }) => {
-			const status = row.original.status;
+		cell: ({ row }) => <StatusCell order={row.original} />,
 
-			let variant: 'success' | 'error' | 'archive' | 'admin';
-			let IconComponent;
-			switch (status) {
-				case 'PENDING':
-					variant = 'archive';
-					IconComponent = RefreshCcw;
-					break;
-				case 'SHIPPED':
-					variant = 'admin';
-					IconComponent = ArrowUpDown;
+		// cell: ({ row }) => {
+		// 	const status = row.original.status;
 
-					break;
-				case 'DELIVERED':
-					variant = 'success';
-					IconComponent = ShieldCheck;
-					break;
-				case 'CANCELED':
-					variant = 'error';
-					IconComponent = Archive;
-					break;
-				default:
-					variant = 'archive';
-					IconComponent = Loader;
-			}
+		// 	let variant: 'success' | 'error' | 'archive' | 'admin';
+		// 	let IconComponent;
+		// 	switch (status) {
+		// 		case 'NEW':
+		// 			variant = 'archive';
+		// 			IconComponent = RefreshCcw;
+		// 			break;
+		// 		case 'COMPLETED':
+		// 			variant = 'success';
+		// 			IconComponent = ShieldCheck;
+		// 			break;
+		// 		case 'CANCELED':
+		// 			variant = 'error';
+		// 			IconComponent = Archive;
+		// 			break;
+		// 		default:
+		// 			variant = 'archive';
+		// 			IconComponent = Loader;
+		// 	}
 
-			return (
-				<Badge variant={variant}>
-					<IconComponent className='w-3 h-auto' />
-					{status}
-				</Badge>
-			);
-		},
+		// 	return (
+		// 		<Badge variant={variant}>
+		// 			<IconComponent className='w-3 h-auto' />
+		// 			{status}
+		// 		</Badge>
+		// 	);
+		// },
 	},
 	{
 		accessorKey: 'createdAt',
@@ -160,9 +151,9 @@ export const columns: ColumnDef<Order>[] = [
 			);
 		},
 	},
-	{
-		id: 'actions',
-		enableHiding: false,
-		cell: ({ row }) => <ActionCell order={row.original} />,
-	},
+	// {
+	// 	id: 'actions',
+	// 	enableHiding: false,
+	// 	cell: ({ row }) => <ActionCell order={row.original} />,
+	// },
 ];

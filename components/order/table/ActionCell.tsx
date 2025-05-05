@@ -9,16 +9,10 @@ import {
 } from '../../ui/dropdown-menu';
 import { Button } from '../../ui/button';
 import { MoreHorizontalIcon } from 'lucide-react';
-
-import { useState } from 'react';
 import { Dialog } from '@radix-ui/react-dialog';
-import Link from 'next/link';
-import { DeleteOrder } from './DeleteOrder';
 import { Order } from '@/types/order';
 
 export default function ActionCell({ order, ...props }: { order: Order }) {
-	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
 	const { id, userId } = order;
 
 	return (
@@ -40,25 +34,8 @@ export default function ActionCell({ order, ...props }: { order: Order }) {
 						Copy User ID
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem className='p-0'>
-						<Link href={`/orders/edit/${id}`} className='px-2 py-1.5 w-full'>
-							Edit Order
-						</Link>
-					</DropdownMenuItem>
-					<DropdownMenuItem
-						onClick={() => setIsDeleteDialogOpen(true)}
-						className='cursor-pointer'
-					>
-						Delete Order
-					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
-
-			<DeleteOrder
-				id={id}
-				open={isDeleteDialogOpen}
-				setOpen={setIsDeleteDialogOpen}
-			/>
 		</Dialog>
 	);
 }
