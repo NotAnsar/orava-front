@@ -9,6 +9,7 @@ import { generateAvatarFallback } from '@/config/dashboard';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatTimestamp } from '@/lib/utils';
 import StatusCell from './StatusCell';
+import ActionCell from './ActionCell';
 
 export const columns: ColumnDef<Order>[] = [
 	{
@@ -156,4 +157,10 @@ export const columns: ColumnDef<Order>[] = [
 	// 	enableHiding: false,
 	// 	cell: ({ row }) => <ActionCell order={row.original} />,
 	// },
+	{
+		id: 'actions',
+		enableHiding: false,
+		header: 'Actions',
+		cell: ({ row }) => <ActionCell order={row.original} />,
+	},
 ];

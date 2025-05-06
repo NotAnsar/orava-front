@@ -1,3 +1,5 @@
+'use client';
+
 import { updateOrderStatus, StatusState } from '@/actions/order-action';
 import SelectInput from '@/components/ui/select-input';
 import { toast } from '@/components/ui/use-toast';
@@ -9,7 +11,7 @@ import { useFormState } from 'react-dom';
 export default function StatusCell({ order }: { order: Order }) {
 	const initialState: StatusState = { message: null, errors: {} };
 	const [state, action] = useFormState(
-		updateOrderStatus.bind(null, order.id),
+		updateOrderStatus.bind(null, order?.id),
 		initialState
 	);
 
@@ -35,7 +37,7 @@ export default function StatusCell({ order }: { order: Order }) {
 			<SelectInput
 				name='status'
 				options={statusEnumValues}
-				initialValue={order.status || undefined}
+				initialValue={order?.status || undefined}
 				placeholder='Select Category'
 				className={cn(
 					state?.errors?.status

@@ -97,7 +97,7 @@ export default function ProductStock({
 						<SelectInput
 							options={colors.map((c) => ({ label: c.name, value: c.id }))}
 							name='colorId'
-							initialValue={product?.color.id || undefined}
+							initialValue={product?.color?.id || undefined}
 							placeholder='Select Color'
 							className={cn(
 								state?.errors?.colorId
@@ -116,21 +116,10 @@ export default function ProductStock({
 						>
 							Size
 						</Label>
-						{/* <ToggleGroup
-							type='single'
-							variant='outline'
-							className='w-full'
-							defaultValue={product?.size.id || undefined}
-						>
-							{sizes.map((size) => (
-								<ToggleGroupItem key={size.id} value={size.id}>
-									{size.name}
-								</ToggleGroupItem>
-							))}
-						</ToggleGroup> */}
+
 						<SizeToggleGroup
 							options={sizes.map((s) => ({ label: s.name, value: s.id }))}
-							defaultValue={product?.size.id}
+							defaultValue={product?.size?.id}
 							name='sizeId'
 							error={!!state?.errors?.sizeId}
 						/>

@@ -139,7 +139,7 @@ export default function UserDetails({
 						<SelectValue placeholder='Select role' />
 					</SelectTrigger>
 					<SelectContent>
-						{USER_ROLES.map(({ label, value }) => (
+						{USER_ROLES?.map(({ label, value }) => (
 							<SelectItem value={value} key={value}>
 								{label}
 							</SelectItem>

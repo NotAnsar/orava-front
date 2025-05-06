@@ -23,6 +23,6 @@ export async function fetchOrderById(id: string) {
 		return response.data.data as Order;
 	} catch (error) {
 		console.error(`Error fetching order ${id}:`, error);
-		throw new Error(`Failed to fetch order with ID ${id}.`);
+		return null;
 	}
 }

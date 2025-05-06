@@ -35,7 +35,7 @@ export default function ProductCategory({
 					<SelectInput
 						options={categories.map((c) => ({ label: c.name, value: c.id }))}
 						name='categoryId'
-						initialValue={product?.category.id || undefined}
+						initialValue={product?.category?.id || undefined}
 						placeholder='Select Category'
 						className={cn(
 							state?.errors?.categoryId
