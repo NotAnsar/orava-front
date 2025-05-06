@@ -1,31 +1,22 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { State } from './utils';
+import axiosInstance from '@/lib/axios';
+import { revalidatePath } from 'next/cache';
 
 const resetPasswordSchema = z.object({
 	email: z.string().email({ message: 'Please enter a valid email address.' }),
 });
 
-export type ResetState =
-	| {
-			errors?: { email?: string[] };
-			message?: string | null;
-	  }
-	| undefined;
-
-// Dummy users for password reset simulation
-const dummyUsers = [
-	{ email: 'admin@example.com', id: '1' },
-	{ email: 'user@example.com', id: '2' },
-	{ email: 'customer@example.com', id: '3' },
-];
+type ResetData = z.infer<typeof resetPasswordSchema>;
+export type ResetState = (State<ResetData> & { success?: boolean }) | undefined;
 
 export async function recoverPassword(
 	prevState: ResetState,
 	formData: FormData
-) {
+): Promise<ResetState> {
 	const validatedFields = resetPasswordSchema.safeParse({
 		email: formData.get('email'),
 	});
@@ -40,28 +31,43 @@ export async function recoverPassword(
 	const { email } = validatedFields.data;
 
 	try {
-		const origin = headers().get('origin');
+		const res = await axiosInstance.post(`/api/auth/forgot-password`, {
+			email,
+		});
+		if (res.data.success) {
+			revalidatePath('/', 'layout');
+			return {
+				message: res.data.message || 'Reset link sent successfully.',
+				success: true,
+			};
+		} else {
+			return { message: res.data.message || 'Failed to send reset link.' };
+		}
+	} catch (error: any) {
+		console.error(error);
 
-		// Check if user exists in our dummy data
-		const userExists = dummyUsers.some((user) => user.email === email);
+		// Handle API error format
+		if (error.response?.data) {
+			const apiError = error.response.data;
 
-		if (!userExists) {
-			return { message: 'User with the provided email is not found.' };
+			if (!apiError.success && apiError.errors) {
+				// Map API field errors to our error format
+				const fieldErrors: Record<string, string[]> = {};
+
+				for (const [field, message] of Object.entries(apiError.errors)) {
+					fieldErrors[field] = [message as string];
+				}
+
+				return {
+					errors: fieldErrors,
+					message: apiError.message || 'Failed to send reset link.',
+				};
+			}
+
+			return { message: apiError.message || 'Failed to send reset link.' };
 		}
 
-		// Log instead of actually sending an email
-		console.log(`Password reset link would be sent to: ${email}`);
-		console.log(
-			`Reset link would redirect to: ${origin}/auth/update-password?code=dummy-reset-code`
-		);
-
-		// Simulate successful password reset email
-		return {
-			message: 'Password reset link has been sent to your email address.',
-		};
-	} catch (error) {
-		console.error(error);
-		return { message: 'Error: Failed to Send Reset Link.' };
+		return { message: error.message || 'Error: Failed to send reset link.' };
 	}
 }
 
@@ -82,19 +88,17 @@ const updatePasswordSchema = z
 		}
 	);
 
+type UpdatePassData = z.infer<typeof updatePasswordSchema>;
 export type UpdatePassState =
-	| {
-			errors?: { password?: string[]; confirmPassword?: string[] };
-			message?: string | null;
-	  }
+	| (State<UpdatePassData> & { success?: boolean })
 	| undefined;
 
 export async function updatePassword(
-	code: string,
+	token: string,
 	prevState: UpdatePassState,
 	formData: FormData
-) {
-	if (!code) redirect('/auth/password-recovery');
+): Promise<UpdatePassState> {
+	if (!token) redirect('/auth/password-recovery');
 
 	const validatedFields = updatePasswordSchema.safeParse({
 		password: formData.get('password'),
@@ -111,19 +115,43 @@ export async function updatePassword(
 	const { password } = validatedFields.data;
 
 	try {
-		// Just log the password update
-		console.log(
-			`Password would be updated to: ${password.substring(0, 1)}${'*'.repeat(
-				password.length - 1
-			)}`
-		);
-		console.log(`Reset code used: ${code}`);
-
-		// Simulate successful password update
-	} catch (error) {
+		const res = await axiosInstance.post(`/api/auth/reset-password`, {
+			password,
+			token,
+		});
+		if (res.data.success) {
+			revalidatePath('/auth/update-password');
+			return {
+				message: res.data.message || 'Password updated successfully.',
+				success: true,
+			};
+		} else {
+			return { message: res.data.message || 'Failed to update password.' };
+		}
+	} catch (error: any) {
 		console.error(error);
-		return { message: 'Unable to reset Password. Try Again' };
-	}
 
-	redirect('/');
+		// Handle API error format
+		if (error.response?.data) {
+			const apiError = error.response.data;
+
+			if (!apiError.success && apiError.errors) {
+				// Map API field errors to our error format
+				const fieldErrors: Record<string, string[]> = {};
+
+				for (const [field, message] of Object.entries(apiError.errors)) {
+					fieldErrors[field] = [message as string];
+				}
+
+				return {
+					errors: fieldErrors,
+					message: apiError.message || 'Failed to update password.',
+				};
+			}
+
+			return { message: apiError.message || 'Failed to update password.' };
+		}
+
+		return { message: error.message || 'Error: Failed to update password.' };
+	}
 }

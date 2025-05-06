@@ -6,11 +6,42 @@ import { Label } from '../ui/label';
 import { updatePassword, UpdatePassState } from '@/actions/reset-password';
 import { cn } from '@/lib/utils';
 import PendingButton from './PendingButton';
+import ErrorMessage from '../ErrorMessage';
+import { useEffect } from 'react';
+import { toast } from '../ui/use-toast';
+import Link from 'next/link';
+import { buttonVariants } from '../ui/button';
+import { useRouter } from 'next/navigation';
 
-export default function UpdatePasswordForm({ code }: { code: string }) {
+export default function UpdatePasswordForm({ token }: { token: string }) {
 	const initialState: UpdatePassState = { message: null, errors: {} };
-	const updateUserWithCode = updatePassword.bind(null, code);
+	const updateUserWithCode = updatePassword.bind(null, token);
 	const [state, action] = useFormState(updateUserWithCode, initialState);
+	const router = useRouter();
+
+	useEffect(() => {
+		if (state?.success) {
+			toast({
+				title: 'Password Updated',
+				description: state?.message,
+				action: (
+					<Link
+						href={'/auth/signin'}
+						className={cn('text-foreground font-medium', buttonVariants())}
+					>
+						Sign In
+					</Link>
+				),
+			});
+			router.replace('/auth/signin');
+		} else if (state?.message) {
+			toast({
+				title: 'Error',
+				description: state?.message,
+				variant: 'destructive',
+			});
+		}
+	}, [state, router]);
 
 	return (
 		<form className='grid gap-2' action={action}>
@@ -33,12 +64,7 @@ export default function UpdatePasswordForm({ code }: { code: string }) {
 							: ''
 					)}
 				/>
-				{state?.errors?.password &&
-					state.errors.password.map((error: string) => (
-						<p className='text-sm font-medium text-destructive' key={error}>
-							{error}
-						</p>
-					))}
+				<ErrorMessage errors={state?.errors?.password} />
 			</div>
 			<div className='space-y-2'>
 				<Label
@@ -61,17 +87,12 @@ export default function UpdatePasswordForm({ code }: { code: string }) {
 							: ''
 					)}
 				/>
-				{state?.errors?.confirmPassword &&
-					state.errors.confirmPassword.map((error: string) => (
-						<p className='text-sm font-medium text-destructive' key={error}>
-							{error}
-						</p>
-					))}
+				<ErrorMessage errors={state?.errors?.confirmPassword} />
 			</div>
 
-			{(state?.message || state?.errors) && (
-				<p className='text-sm font-medium text-destructive'>{state.message}</p>
-			)}
+			<ErrorMessage
+				errors={state?.message && !state.success ? [state?.message] : undefined}
+			/>
 			<PendingButton>Update Password</PendingButton>
 		</form>
 	);

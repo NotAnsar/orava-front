@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default function Page({
 	searchParams,
 }: {
-	searchParams: { code?: string };
+	searchParams: { token?: string };
 }) {
 	return (
 		<>
@@ -26,7 +26,7 @@ export default function Page({
 				</p>
 			</div>
 
-			<UpdatePasswordForm code={searchParams.code || ''} />
+			<UpdatePasswordForm token={searchParams.token || ''} />
 			<div className='grid gap-1 text-[13px] text-muted-foreground/80 '>
 				<p>
 					Need to sign in?{' '}

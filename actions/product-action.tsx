@@ -53,21 +53,8 @@ export async function createProduct(
 		featured: formData.get('featured') === 'true',
 		archived: formData.get('archived') === 'true',
 	});
-	console.log({
-		name: formData.get('name'),
-		description: formData.get('description'),
-		price: parseFloat(formData.get('price') as string),
-		stock: parseInt(formData.get('stock') as string, 10),
-		colorId: formData.get('colorId'),
-		sizeId: formData.get('sizeId'),
-		categoryId: formData.get('categoryId'),
-		featured: formData.get('featured') === 'true',
-		archived: formData.get('archived') === 'true',
-	});
 
 	if (!validatedFields.success) {
-		console.log(validatedFields.error.flatten().fieldErrors);
-
 		return {
 			errors: validatedFields.error.flatten().fieldErrors,
 			message: 'Invalid product data. Please check the form fields.',

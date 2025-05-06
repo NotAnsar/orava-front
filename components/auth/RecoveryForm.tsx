@@ -9,17 +9,20 @@ import Link from 'next/link';
 import PendingButton from './PendingButton';
 import { useEffect } from 'react';
 import { toast } from '../ui/use-toast';
+import ErrorMessage from '../ErrorMessage';
 
 export default function RecoveryForm() {
 	const initialState: ResetState = { message: null, errors: {} };
 	const [state, action] = useFormState(recoverPassword, initialState);
 
 	useEffect(() => {
-		if (state === undefined) {
+		if (state?.success) {
+			toast({ title: 'Reset Link Sent', description: state.message });
+		} else if (state?.message) {
 			toast({
-				title: 'Reset Link Sent',
-				description:
-					'Reset link successfully sent to your email. Please check your inbox.',
+				title: 'Error',
+				description: state?.message,
+				variant: 'destructive',
 			});
 		}
 	}, [state]);
@@ -43,19 +46,15 @@ export default function RecoveryForm() {
 								: ''
 						)}
 					/>
-					{state?.errors?.email &&
-						state.errors.email.map((error: string) => (
-							<p className='text-sm font-medium text-destructive' key={error}>
-								{error}
-							</p>
-						))}
+
+					<ErrorMessage errors={state?.errors?.email} />
 				</div>
 
-				{(state?.message || state?.errors) && (
-					<p className='text-sm font-medium text-destructive'>
-						{state.message}
-					</p>
-				)}
+				<ErrorMessage
+					errors={
+						state?.message && !state.success ? [state?.message] : undefined
+					}
+				/>
 				<PendingButton>Send Reset Link</PendingButton>
 			</form>
 			<div className='grid gap-1 text-[13px] text-muted-foreground/80 '>
