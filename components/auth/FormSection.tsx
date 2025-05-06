@@ -1,12 +1,14 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { signinAction } from '@/actions/auth-action';
+import { signinAction, signinGuest } from '@/actions/auth-action';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import PendingButton from './PendingButton';
+import { useEffect } from 'react';
+import { toast } from '../ui/use-toast';
 
 export default function FormSection() {
 	const [state, action] = useFormState(signinAction, {});
@@ -81,7 +83,41 @@ export default function FormSection() {
 						Click here
 					</Link>
 				</p>
+				<GuestSection />
 			</div>
 		</>
+	);
+}
+
+export function GuestSection() {
+	const [state, action] = useFormState(signinGuest, {});
+	useEffect(() => {
+		if (state?.message) {
+			toast({
+				title: 'Guest User Error',
+				description: state.message,
+				variant: 'destructive',
+			});
+		}
+	}, [state?.message, state?.errors]);
+
+	return (
+		<form action={action}>
+			Or Just Join as <PendingGuestButton />
+		</form>
+	);
+}
+
+export function PendingGuestButton() {
+	const { pending } = useFormStatus();
+	return (
+		<button
+			className='text-foreground font-medium hover:underline'
+			type='submit'
+			aria-disabled={pending}
+			disabled={pending}
+		>
+			{pending ? '...' : 'Guest User'}
+		</button>
 	);
 }

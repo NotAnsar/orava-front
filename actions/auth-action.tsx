@@ -74,6 +74,40 @@ export async function signinAction(
 	revalidatePath('/', 'layout');
 	redirect('/');
 }
+export async function signinGuest(
+	prevState: SignInState
+): Promise<SignInState> {
+	try {
+		const res = await axiosInstance.post(`/api/auth/guest-login`);
+
+		if (res.data.success) {
+			await createSession(res.data.user.id + '', res.data.token, res.data.user);
+		} else {
+			return { message: res.data.message || 'Login failed. Please try again.' };
+		}
+	} catch (error) {
+		// Provide more specific error messages based on response status
+		if (axios.isAxiosError(error)) {
+			if (error.response?.data) {
+				return {
+					message:
+						error.response.data.message || 'Login failed. Please try again.',
+				};
+			}
+
+			if (error.response?.data?.message) {
+				return { message: error.response.data.message };
+			}
+		}
+
+		return {
+			message: 'Authentication service unavailable. Please try again later.',
+		};
+	}
+
+	revalidatePath('/', 'layout');
+	redirect('/');
+}
 
 export async function logout() {
 	await deleteSession();
