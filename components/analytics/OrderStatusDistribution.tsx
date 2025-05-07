@@ -7,23 +7,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import { OrderStatus } from '@/types/analytics';
+
 import { DonutChart } from '@tremor/react';
-
-// Mock data - in a real app, this would be fetched based on timeRange
-const orderStatusData = [
-	{ status: 'NEW', count: 65 },
-	{ status: 'PROCESSING', count: 142 },
-	{ status: 'COMPLETED', count: 435 },
-	{ status: 'CANCELED', count: 47 },
-];
-
-interface OrderStatusDistributionProps {
-	timeRange: string;
-}
+import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export default function OrderStatusDistribution({
-	timeRange,
-}: OrderStatusDistributionProps) {
+	data,
+}: {
+	data: OrderStatus[];
+}) {
 	const numberFormatter = (value: number) => value.toLocaleString();
 
 	return (
@@ -35,14 +29,41 @@ export default function OrderStatusDistribution({
 			<CardContent>
 				<DonutChart
 					className='h-72'
-					data={orderStatusData}
+					data={data}
 					category='count'
 					index='status'
 					valueFormatter={numberFormatter}
-					colors={['amber', 'blue', 'green', 'rose']}
+					colors={['amber', 'green', 'rose', 'blue']}
 					showAnimation={true}
 					showLabel={true}
 				/>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function OrderStatusDistributionSkeleton({
+	className,
+}: {
+	className?: string;
+}) {
+	return (
+		<Card className={cn('col-span-1', className)}>
+			<CardHeader>
+				<CardTitle>
+					<Skeleton className='h-8 w-56' />
+				</CardTitle>
+				<CardDescription>
+					<Skeleton className='h-4 w-40 mt-2' />
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div className='h-72 flex items-center justify-center'>
+					<div className='relative w-48 h-48'>
+						<Skeleton className='absolute inset-0 rounded-full' />
+						<Skeleton className='absolute inset-[25%] rounded-full bg-background' />
+					</div>
+				</div>
 			</CardContent>
 		</Card>
 	);

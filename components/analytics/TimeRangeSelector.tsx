@@ -7,18 +7,23 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
 
 interface TimeRangeSelectorProps {
 	timeRange: string;
-	setTimeRange: (value: string) => void;
 }
 
 export default function TimeRangeSelector({
 	timeRange,
-	setTimeRange,
 }: TimeRangeSelectorProps) {
+	const router = useRouter();
+
+	const handleValueChange = (newTimeRange: string) => {
+		router.push(`?timeRange=${newTimeRange}`);
+	};
+
 	return (
-		<Select value={timeRange} onValueChange={setTimeRange}>
+		<Select value={timeRange} onValueChange={handleValueChange}>
 			<SelectTrigger className='w-[180px]'>
 				<SelectValue placeholder='Select time range' />
 			</SelectTrigger>

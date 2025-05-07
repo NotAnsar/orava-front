@@ -9,23 +9,11 @@ import {
 } from '@/components/ui/card';
 import { BarChart, LineChart } from '@tremor/react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { type SalesByDay } from '@/types/analytics';
+import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
-// Mock data - in a real app, this would be fetched based on timeRange
-const salesByDayData = [
-	{ day: 'Monday', sales: 4200, transactions: 142 },
-	{ day: 'Tuesday', sales: 3800, transactions: 121 },
-	{ day: 'Wednesday', sales: 4100, transactions: 136 },
-	{ day: 'Thursday', sales: 4800, transactions: 157 },
-	{ day: 'Friday', sales: 5700, transactions: 182 },
-	{ day: 'Saturday', sales: 6800, transactions: 214 },
-	{ day: 'Sunday', sales: 4900, transactions: 164 },
-];
-
-interface SalesByDayOfWeekProps {
-	timeRange: string;
-}
-
-export default function SalesByDayOfWeek({ timeRange }: SalesByDayOfWeekProps) {
+export default function SalesByDayOfWeek({ data }: { data: SalesByDay[] }) {
 	const dollarFormatter = (value: number) => `$${value.toLocaleString()}`;
 	const numberFormatter = (value: number) => value.toLocaleString();
 
@@ -49,7 +37,7 @@ export default function SalesByDayOfWeek({ timeRange }: SalesByDayOfWeekProps) {
 					<TabsContent value='bar'>
 						<BarChart
 							className='h-80'
-							data={salesByDayData}
+							data={data}
 							index='day'
 							categories={['sales']}
 							colors={['violet']}
@@ -62,7 +50,7 @@ export default function SalesByDayOfWeek({ timeRange }: SalesByDayOfWeekProps) {
 					<TabsContent value='line'>
 						<LineChart
 							className='h-80'
-							data={salesByDayData}
+							data={data}
 							index='day'
 							categories={['sales', 'transactions']}
 							colors={['violet', 'emerald']}
@@ -76,6 +64,33 @@ export default function SalesByDayOfWeek({ timeRange }: SalesByDayOfWeekProps) {
 						/>
 					</TabsContent>
 				</Tabs>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function SalesByDayOfWeekSkeleton({
+	className,
+}: {
+	className?: string;
+}) {
+	return (
+		<Card className={cn('col-span-1', className)}>
+			<CardHeader>
+				<CardTitle>
+					<Skeleton className='h-8 w-48' />
+				</CardTitle>
+				<CardDescription>
+					<Skeleton className='h-4 w-64 mt-2' />
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div className='flex justify-end mb-4'>
+					<Skeleton className='h-9 w-32 rounded-md' />
+				</div>
+				<div className='h-80 w-full'>
+					<Skeleton className='h-full w-full' />
+				</div>
 			</CardContent>
 		</Card>
 	);

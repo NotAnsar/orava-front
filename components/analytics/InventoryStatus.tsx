@@ -7,23 +7,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { type InventoryStatus } from '@/types/analytics';
 import { BarChart } from '@tremor/react';
+import { Skeleton } from '../ui/skeleton';
 
-// Mock data - in a real app, this would be fetched based on timeRange
-const inventoryLevelData = [
-	{ name: 'Smartphone X', stock: 42, threshold: 30 },
-	{ name: 'Wireless Earbuds', stock: 18, threshold: 25 },
-	{ name: 'Laptop Pro', stock: 31, threshold: 20 },
-	{ name: 'Smart Watch', stock: 12, threshold: 15 },
-	{ name: 'Tablet Mini', stock: 8, threshold: 20 },
-	{ name: 'Bluetooth Speaker', stock: 22, threshold: 15 },
-];
-
-interface InventoryStatusProps {
-	timeRange: string;
-}
-
-export default function InventoryStatus({ timeRange }: InventoryStatusProps) {
+export default function InventoryStatus({ data }: { data: InventoryStatus[] }) {
 	const numberFormatter = (value: number) => value.toLocaleString();
 
 	return (
@@ -35,7 +24,7 @@ export default function InventoryStatus({ timeRange }: InventoryStatusProps) {
 			<CardContent>
 				<BarChart
 					className='h-72'
-					data={inventoryLevelData}
+					data={data}
 					index='name'
 					categories={['stock', 'threshold']}
 					colors={['blue', 'red']}
@@ -45,6 +34,44 @@ export default function InventoryStatus({ timeRange }: InventoryStatusProps) {
 					showLegend={true}
 					yAxisWidth={140}
 				/>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function InventoryStatusSkeleton({ className }: { className?: string }) {
+	return (
+		<Card className={cn('col-span-1', className)}>
+			<CardHeader>
+				<CardTitle>
+					<Skeleton className='h-8 w-36' />
+				</CardTitle>
+				<CardDescription>
+					<Skeleton className='h-4 w-52 mt-2' />
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div className='flex flex-col h-72'>
+					<div className='flex items-center justify-end mb-3'>
+						<Skeleton className='h-4 w-16 mr-3' />
+						<Skeleton className='h-4 w-16' />
+					</div>
+					<div className='flex flex-1 items-center'>
+						<div className='w-32'>
+							{[1, 2, 3, 4, 5].map((i) => (
+								<Skeleton key={i} className='h-4 w-28 mb-5' />
+							))}
+						</div>
+						<div className='flex-1 h-full'>
+							{[1, 2, 3, 4, 5].map((i) => (
+								<div key={i} className='flex h-6 mb-3 gap-2 items-center'>
+									<Skeleton className='h-6 w-full max-w-[120px]' />
+									<Skeleton className='h-6 w-full max-w-[80px]' />
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
 			</CardContent>
 		</Card>
 	);

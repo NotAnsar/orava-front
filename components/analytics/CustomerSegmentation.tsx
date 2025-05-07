@@ -7,25 +7,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { CustomerSegment } from '@/types/analytics';
 import { AreaChart } from '@tremor/react';
-
-// Mock data - in a real app, this would be fetched based on timeRange
-const customerSegmentData = [
-	{ month: 'Jan', new: 85, returning: 120 },
-	{ month: 'Feb', new: 92, returning: 145 },
-	{ month: 'Mar', new: 118, returning: 162 },
-	{ month: 'Apr', new: 108, returning: 190 },
-	{ month: 'May', new: 132, returning: 213 },
-	{ month: 'Jun', new: 124, returning: 252 },
-];
-
-interface CustomerSegmentationProps {
-	timeRange: string;
-}
+import { Skeleton } from '../ui/skeleton';
 
 export default function CustomerSegmentation({
-	timeRange,
-}: CustomerSegmentationProps) {
+	data,
+}: {
+	data: CustomerSegment[];
+}) {
 	const numberFormatter = (value: number) => value.toLocaleString();
 
 	return (
@@ -37,7 +28,7 @@ export default function CustomerSegmentation({
 			<CardContent>
 				<AreaChart
 					className='h-72'
-					data={customerSegmentData}
+					data={data}
 					index='month'
 					categories={['new', 'returning']}
 					colors={['emerald', 'violet']}
@@ -46,6 +37,41 @@ export default function CustomerSegmentation({
 					showLegend={true}
 					stack={true}
 				/>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function CustomerSegmentationSkeleton({
+	className,
+}: {
+	className?: string;
+}) {
+	return (
+		<Card className={cn('col-span-1', className)}>
+			<CardHeader>
+				<CardTitle>
+					<Skeleton className='h-8 w-56' />
+				</CardTitle>
+				<CardDescription>
+					<Skeleton className='h-4 w-48 mt-2' />
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div className='flex flex-col h-72'>
+					<div className='flex items-center justify-end mb-3'>
+						<Skeleton className='h-4 w-16 mr-3' />
+						<Skeleton className='h-4 w-16' />
+					</div>
+					<div className='flex-1 relative'>
+						<div className='absolute bottom-0 left-0 right-0 h-3/4'>
+							<div className='h-full w-full relative'>
+								<Skeleton className='absolute bottom-0 left-0 right-0 h-3/5 rounded-md opacity-70' />
+								<Skeleton className='absolute bottom-0 left-0 right-0 h-4/5 rounded-md opacity-40' />
+							</div>
+						</div>
+					</div>
+				</div>
 			</CardContent>
 		</Card>
 	);

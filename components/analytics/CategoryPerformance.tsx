@@ -7,24 +7,16 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import { type CategoryPerformance } from '@/types/analytics';
 import { DonutChart } from '@tremor/react';
-
-// Mock data - in a real app, this would be fetched based on timeRange
-const categoryData = [
-	{ category: 'Electronics', sales: 45000 },
-	{ category: 'Clothing', sales: 31000 },
-	{ category: 'Home & Kitchen', sales: 26500 },
-	{ category: 'Sports', sales: 17800 },
-	{ category: 'Books', sales: 12300 },
-];
-
-interface CategoryPerformanceProps {
-	timeRange: string;
-}
+import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
 export default function CategoryPerformance({
-	timeRange,
-}: CategoryPerformanceProps) {
+	data,
+}: {
+	data: CategoryPerformance[];
+}) {
 	const dollarFormatter = (value: number) => `$${value.toLocaleString()}`;
 
 	return (
@@ -36,7 +28,7 @@ export default function CategoryPerformance({
 			<CardContent>
 				<DonutChart
 					className='h-72'
-					data={categoryData}
+					data={data}
 					category='sales'
 					index='category'
 					valueFormatter={dollarFormatter}
@@ -45,6 +37,30 @@ export default function CategoryPerformance({
 					showLabel={false}
 					showTooltip={true}
 				/>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function CategoryPerformanceSkeleton({
+	className,
+}: {
+	className?: string;
+}) {
+	return (
+		<Card className={cn('rounded-lg', className)}>
+			<CardHeader>
+				<CardTitle>
+					<Skeleton className='h-8 w-48' />
+				</CardTitle>
+				<CardDescription>
+					<Skeleton className='h-4 w-56 mt-2' />
+				</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<div className='h-72 flex items-center justify-center'>
+					<Skeleton className='h-full w-full rounded-full max-w-[240px] max-h-[240px]' />
+				</div>
 			</CardContent>
 		</Card>
 	);

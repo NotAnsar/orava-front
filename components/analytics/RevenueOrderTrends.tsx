@@ -7,31 +7,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card';
+import { RevenueTrend } from '@/types/analytics';
 import { AreaChart } from '@tremor/react';
-
-// Mock data - in a real app, this would be fetched based on timeRange
-const salesTrendData = [
-	{ date: 'Jan', revenue: 4200, orders: 42 },
-	{ date: 'Feb', revenue: 3800, orders: 38 },
-	{ date: 'Mar', revenue: 6200, orders: 67 },
-	{ date: 'Apr', revenue: 8100, orders: 81 },
-	{ date: 'May', revenue: 7400, orders: 79 },
-	{ date: 'Jun', revenue: 9100, orders: 95 },
-];
-
-interface RevenueOrderTrendsProps {
-	timeRange: string;
-}
+import { Skeleton } from '../ui/skeleton';
 
 export default function RevenueOrderTrends({
-	timeRange,
-}: RevenueOrderTrendsProps) {
-	// Value formatters
+	salesTrendData,
+}: {
+	salesTrendData: RevenueTrend[];
+}) {
 	const dollarFormatter = (value: number) => `$${value.toLocaleString()}`;
 	const numberFormatter = (value: number) => value.toLocaleString();
-
-	// In a real app, you'd fetch data based on timeRange
-	// const data = useMemo(() => fetchDataForTimeRange(timeRange), [timeRange]);
 
 	return (
 		<Card className='col-span-1'>
@@ -54,6 +40,41 @@ export default function RevenueOrderTrends({
 					showAnimation={true}
 					showLegend={true}
 				/>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function RevenueOrderTrendsSkeleton({
+	className,
+}: {
+	className?: string;
+}) {
+	return (
+		<Card className={`col-span-1 ${className}`}>
+			<CardHeader>
+				<div className='space-y-2'>
+					<Skeleton className='h-5 w-1/3' />
+					<Skeleton className='h-4 w-1/2' />
+				</div>
+			</CardHeader>
+			<CardContent>
+				<div className='h-72 relative'>
+					{/* Chart area skeleton */}
+					<Skeleton className='h-full w-full' />
+
+					{/* Legend skeletons */}
+					<div className='absolute bottom-2 right-2 flex items-center space-x-4'>
+						<div className='flex items-center space-x-1'>
+							<Skeleton className='h-3 w-3 rounded-full' />
+							<Skeleton className='h-4 w-16' />
+						</div>
+						<div className='flex items-center space-x-1'>
+							<Skeleton className='h-3 w-3 rounded-full' />
+							<Skeleton className='h-4 w-16' />
+						</div>
+					</div>
+				</div>
 			</CardContent>
 		</Card>
 	);
