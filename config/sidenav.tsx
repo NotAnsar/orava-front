@@ -25,7 +25,6 @@ export const dashConfig = {
 	overview: [
 		{ title: 'Dashboard', Icon: LayoutDashboard, path: '/' },
 		{ title: 'Analytics', Icon: BarChart3, path: '/analytics' },
-		{ title: 'Reports', Icon: FileText, path: '/reports' },
 	],
 	management: [
 		{ title: 'Users', Icon: Users, path: '/users' },

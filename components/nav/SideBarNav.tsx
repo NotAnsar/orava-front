@@ -36,6 +36,7 @@ export default function SideBarNav({
 				className='mt-8'
 			/>
 			<NavGroup label='Management' menuGrp={management} path={path} />
+			<NavGroup label='Tools' menuGrp={tools} path={path} />
 
 			<SignOut className='w-full mb-3 mt-auto' />
 		</aside>
