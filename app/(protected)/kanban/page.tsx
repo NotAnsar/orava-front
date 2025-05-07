@@ -334,7 +334,7 @@ export default function Kanban() {
 							title={column.title}
 							taskCount={getTasksByStatus(column.id).length}
 						>
-							<div className='flex-1 overflow-x-hidden p-2 space-y-3'>
+							<div className='flex-1 overflow-x-hidden p-2 space-y-3 overflow-y-hidden'>
 								{getTasksByStatus(column.id).map((task) => (
 									<KanbanItem
 										key={task.id}
