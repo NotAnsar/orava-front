@@ -57,13 +57,11 @@ export const columns: ColumnDef<User>[] = [
 	{
 		accessorKey: 'createdAt',
 		header: 'Date Joined',
-		cell: ({ row }) => {
-			return (
-				<div className='text-sm text-nowrap'>
-					{formatTimestamp(row.getValue('createdAt'))}
-				</div>
-			);
-		},
+		cell: ({ row }) => (
+			<div className='text-sm text-nowrap'>
+				{formatTimestamp(row.getValue('createdAt'))}
+			</div>
+		),
 	},
 	{
 		id: 'actions',
