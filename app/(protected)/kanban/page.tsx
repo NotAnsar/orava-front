@@ -4,7 +4,6 @@ import React from 'react';
 
 export default async function page() {
 	const data = await fetchTasks();
-	console.log(data);
 
 	return <Kanban data={data} />;
 }

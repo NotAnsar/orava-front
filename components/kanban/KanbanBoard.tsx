@@ -62,15 +62,17 @@ export default function KanbanBoard({ tasks, onEditTask }: KanbanBoardProps) {
 			targetColumnId === 'done'
 		) {
 			startTransition(async () => {
-				try {
-					console.log(taskId, targetColumnId.toUpperCase());
-
-					await updateTaskStatus(taskId, targetColumnId.toUpperCase());
-				} catch (error) {
+				const res = await updateTaskStatus(
+					taskId,
+					targetColumnId.toUpperCase()
+				);
+				// if (!res.success) {
+				if (res.message) {
 					toast({
-						title: 'Error',
-						description: 'Failed to update task status',
-						variant: 'destructive',
+						title: res.success ? 'Success' : 'Error',
+						description: res.message,
+						variant: res.success ? 'default' : 'destructive',
+						duration: 3000,
 					});
 				}
 			});

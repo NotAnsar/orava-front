@@ -13,8 +13,6 @@ export default function Kanban({ data: tasks }: { data: Task[] }) {
 
 	// Handler for editing a task
 	const handleEditTask = (task: Task) => {
-		console.log('task', task);
-
 		setEditTask(task);
 		setIsEditDialogOpen(true);
 	};

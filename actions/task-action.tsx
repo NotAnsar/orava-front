@@ -178,31 +178,6 @@ export async function updateTask(
 	}
 }
 
-// /**
-//  * Updates only the status of a task (used for drag and drop)
-//  */
-// export async function updateTaskStatus(
-// 	id: string,
-// 	status: string
-// ): Promise<Task> {
-// 	try {
-// 		const response = await axiosInstance.patch(`${TASK_API}/${id}`, { status });
-// 		console.log(`${TASK_API}/${id}`, { status });
-
-// 		if (!response.data || !response.data.success) {
-// 			throw new Error('Failed to update task status');
-// 		}
-
-// 		revalidatePath('/kanban');
-// 		return response.data.data;
-// 	} catch (error: any) {
-// 		// console.error('Failed to update task status:', error);
-// 		throw new Error(
-// 			error?.response?.data?.message || 'Failed to update task status'
-// 		);
-// 	}
-// }
-
 export async function updateTaskStatus(
 	id: string,
 	status: string
