@@ -34,7 +34,7 @@ export default async function AuthenticatedLayout({
 			<div className='absolute right-4 bottom-4 md:right-8 md:bottom-8 flex items-center gap-2'>
 				<ModeToggle className='bg-transparent backdrop-blur-md' />
 			</div>
-			<Link
+			{/* <Link
 				href={'https://cadency-music.vercel.app/'}
 				target='_blank'
 				className='absolute right-4 top-4 md:right-8 md:top-8 flex items-center gap-1 text-[13px] bg-foreground rounded-full text-background px-6 cursor-pointer hover:gap-2 transition-all duration-300 group h-7'
@@ -45,7 +45,7 @@ export default async function AuthenticatedLayout({
 					className='w-[16px] h-auto group-hover:-rotate-45 transition-all duration-300 '
 					strokeWidth='1.5'
 				/>
-			</Link>
+			</Link> */}
 		</div>
 	);
 }

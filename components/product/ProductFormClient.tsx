@@ -15,6 +15,7 @@ import ProductStock from './form-items/ProductStock';
 import FeaturedProduct from './form-items/FeaturedProduct';
 import ProductCategory from './form-items/ProductCategory';
 import ProductStatus from './form-items/ProductStatus';
+import ProductImages from './form-items/ProductImages';
 
 const initialState = { message: null, errors: {} };
 
@@ -71,7 +72,7 @@ export default function ProductFormClient({
 						state={state}
 						product={product}
 					/>
-					{/* <ProductImages isLoading={isPending} /> */}
+					<ProductImages state={state} product={product} />
 					<ProductStatus state={state} product={product} />
 				</div>
 			</div>

@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import axiosInstance from '@/lib/axios';
-import { PRODUCT_API } from '@/types/product';
-import { DeleteState, State } from './utils';
+import { Product, PRODUCT_API } from '@/types/product';
+import { checkFile, DeleteState, imageSchema, State } from './utils';
 
 const productSchema = z.object({
 	name: z
@@ -28,6 +28,7 @@ const productSchema = z.object({
 		message: 'Please provide a valid category identifier.',
 	}),
 	archived: z.boolean(),
+	image: imageSchema.shape.file.optional(),
 });
 
 // You can also export the inferred type if needed
@@ -52,6 +53,7 @@ export async function createProduct(
 		categoryId: formData.get('categoryId') || undefined,
 		featured: formData.get('featured') === 'true',
 		archived: formData.get('archived') === 'true',
+		image: await checkFile(formData.get('image')),
 	});
 
 	if (!validatedFields.success) {
@@ -72,6 +74,7 @@ export async function createProduct(
 			colorId,
 			sizeId,
 			categoryId,
+			image,
 		} = validatedFields.data;
 
 		// Format data according to the Java backend expectations
@@ -87,11 +90,32 @@ export async function createProduct(
 			categoryId,
 		};
 
-		// Create the product via API
-		const response = await axiosInstance.post(PRODUCT_API, productData);
+		// 1. Create the product via API
+		const productResponse = await axiosInstance.post(PRODUCT_API, productData);
 
-		if (!response.data || !response.data.success) {
+		if (!productResponse.data || !productResponse.data.success) {
 			throw new Error('Failed to create product');
+		}
+
+		// 2. If image is provided, upload it to the newly created product
+		if (image) {
+			const productId = productResponse.data.data.id;
+			const imageFormData = new FormData();
+			imageFormData.append('files', image);
+
+			const imageResponse = await axiosInstance.post(
+				`${PRODUCT_API}/${productId}/images`,
+				imageFormData,
+				{
+					headers: {
+						'Content-Type': 'multipart/form-data',
+					},
+				}
+			);
+
+			if (!imageResponse.data || !imageResponse.data.success) {
+				console.error('Image upload failed, but product was created');
+			}
 		}
 	} catch (error: any) {
 		console.error(error);
@@ -132,7 +156,18 @@ export async function updateProduct(
 	prevState: ProductState,
 	formData: FormData
 ): Promise<ProductState> {
-	const validatedFields = productSchema.safeParse({
+	// Get image file first to handle it separately
+	const image = await checkFile(formData.get('image'));
+	const existingImageUrl = formData.get('existingImageUrl');
+
+	if (!image && !existingImageUrl) {
+		return {
+			errors: { image: ['Please provide an image file.'] },
+			message: 'Image is required.',
+		};
+	}
+
+	const validatedFields = productSchema.omit({ image: true }).safeParse({
 		name: formData.get('name'),
 		description: formData.get('description'),
 		price: parseFloat(formData.get('price') as string),
@@ -177,14 +212,49 @@ export async function updateProduct(
 			categoryId,
 		};
 
-		// Update the product via API
-		const response = await axiosInstance.patch(
+		// 1. Update the product via API
+		const productResponse = await axiosInstance.patch(
 			`${PRODUCT_API}/${id}`,
 			productData
 		);
 
-		if (!response.data || !response.data.success) {
+		if (!productResponse.data || !productResponse.data.success) {
 			throw new Error('Failed to update product');
+		}
+
+		const product = productResponse.data.data as Product;
+
+		if (image) {
+			if (
+				product.images &&
+				Array.isArray(product.images) &&
+				product.images.length > 0
+			) {
+				try {
+					const imagesIds = product.images.map((img) => img.id);
+
+					await Promise.all(
+						imagesIds.map((id) =>
+							axiosInstance.delete(`${PRODUCT_API}/images/${id}`)
+						)
+					);
+				} catch (error) {
+					console.error('Failed to delete existing images', error);
+				}
+			}
+
+			const imageFormData = new FormData();
+			imageFormData.append('files', image);
+
+			const imageResponse = await axiosInstance.post(
+				`${PRODUCT_API}/${id}/images`,
+				imageFormData,
+				{ headers: { 'Content-Type': 'multipart/form-data' } }
+			);
+
+			if (!imageResponse.data || !imageResponse.data.success) {
+				console.error('Image upload failed, but product was updated');
+			}
 		}
 	} catch (error: any) {
 		console.error(error);

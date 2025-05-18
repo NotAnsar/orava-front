@@ -14,6 +14,13 @@ export type Product = {
 	color: Color;
 	size: Size;
 	category: Category;
+	images: ProductImage[] | null;
+};
+
+export type ProductImage = {
+	id: string;
+	url: string;
+	createdAt: number;
 };
 
 // API endpoints
