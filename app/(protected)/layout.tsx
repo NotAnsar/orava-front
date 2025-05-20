@@ -1,3 +1,4 @@
+import LiveChatBot from '@/components/chat/LiveChatBot';
 import SideBarNav from '@/components/nav/SideBarNav';
 import TopNav from '@/components/nav/TopNav';
 import type { Metadata } from 'next';
@@ -18,7 +19,10 @@ export default async function AuthenticatedLayout({
 			<div className='md:ml-56'>
 				<TopNav />
 
-				<main className='p-6'>{children}</main>
+				<main className='p-6'>
+					{children}
+					<LiveChatBot />
+				</main>
 			</div>
 		</>
 	);
