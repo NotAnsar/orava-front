@@ -143,13 +143,30 @@ export const columns: ColumnDef<Order>[] = [
 	},
 	{
 		accessorKey: 'createdAt',
-		header: 'Ordered At',
+		enableSorting: true,
+		header: ({ column }) => {
+			return (
+				<Button
+					variant='ghost'
+					onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+					className='pl-0'
+				>
+					Ordered At
+					<ArrowUpDown className='ml-2 h-4 w-4' />
+				</Button>
+			);
+		},
 		cell: ({ row }) => {
 			return (
 				<div className='text-sm text-nowrap'>
-					{formatTimestamp(row.getValue('createdAt'), true)}
+					{formatTimestamp(row.original.createdAt, true)}
 				</div>
 			);
+		},
+		sortingFn: (rowA, rowB, columnId) => {
+			const dateA = new Date(rowA.original.createdAt).getTime();
+			const dateB = new Date(rowB.original.createdAt).getTime();
+			return dateA > dateB ? 1 : dateA < dateB ? -1 : 0;
 		},
 	},
 	// {
