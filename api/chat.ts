@@ -1,40 +1,3 @@
-// 'use server';
-
-// import { streamText } from 'ai';
-// import { gemini } from '@/lib/gemini';
-// import { createStreamableValue } from 'ai/rsc';
-// import { Message } from '@/components/chat/LiveChatBot';
-// import { text } from 'stream/consumers';
-
-// export const chat = async (history: Message[]) => {
-// 	const stream = createStreamableValue();
-
-// 	(async () => {
-// 		const { textStream } = streamText({
-// 			model: gemini('gemini-1.5-flash'),
-// 			messages: history,
-// 		});
-
-// 		console.log(text);
-
-// 		for await (const text of textStream) {
-// 			stream.update(text);
-// 		}
-
-// 		stream.done();
-// 	})();
-
-// 	console.log({
-// 		messages: history,
-// 		newMessage: stream.value,
-// 	});
-
-// 	return {
-// 		messages: history,
-// 		newMessage: stream.value,
-// 	};
-// };
-
 'use server';
 
 import { streamText } from 'ai';
@@ -248,7 +211,69 @@ If the user's request isn't related to database queries, return "NOT_SQL_QUERY" 
 	return cleanSqlQuery(sqlQuery);
 }
 
-// Format SQL results and stream to user
+// // Format SQL results and stream to user
+// async function formatAndStreamResults(
+// 	userMessage: string,
+// 	sqlQuery: string,
+// 	resultsData: any,
+// 	stream: ReturnType<typeof createStreamableValue>
+// ) {
+// 	const { textStream: formattingStream } = streamText({
+// 		model: gemini('gemini-1.5-flash'),
+// 		messages: [
+// 			{
+// 				role: 'system',
+// 				content: `You're an e-commerce data analyst. Format these SQL query results into a clear, readable response optimized for a small mobile chat window (max-width: 400px).
+
+// 1. Start with a brief, bold headline summarizing the data
+// 2. Use concise text with short paragraphs (1-2 lines max)
+// 3. Use markdown formatting:
+//    - **Bold** for important data points
+//    - Use bullet lists with short items
+//    - Short, clear headings with ## or ### (not #)
+//    - Add spacing between sections
+// 4. EXCLUDE any database IDs from your response - don't show "id", "user_id", etc.
+// 5. Format dates in a user-friendly way (e.g., "May 21, 2023")
+// 6. Limit lists to 5-7 items max even if more data exists
+// 7. DO NOT include the SQL query in your response
+
+// For data presentation:
+// - For empty results: Brief explanation + possible reason
+// - For 1-5 items: Show each with bullets
+// - For >5 items: Show highlights and summarize trends
+
+// Use markdown and keep formatting compact to fit a small mobile screen.`,
+// 			},
+// 			{
+// 				role: 'user',
+// 				content: `The user asked: "${userMessage}"
+
+// SQL Query:
+// ${sqlQuery}
+
+// Results:
+// ${JSON.stringify(resultsData)}`,
+// 			},
+// 		],
+// 	});
+
+// 	let hasContent = false;
+// 	for await (const text of formattingStream) {
+// 		if (text && text.trim()) hasContent = true;
+// 		stream.update(text);
+// 	}
+
+// 	// Provide fallback if no content was generated
+// 	if (!hasContent) {
+// 		stream.update(
+// 			"I found some data matching your request, but I'm having trouble formatting the results. Here's a basic summary: " +
+// 				`${
+// 					Array.isArray(resultsData) ? resultsData.length : 0
+// 				} records were found.`
+// 		);
+// 	}
+// }
+
 async function formatAndStreamResults(
 	userMessage: string,
 	sqlQuery: string,
@@ -260,20 +285,29 @@ async function formatAndStreamResults(
 		messages: [
 			{
 				role: 'system',
-				content: `You're an e-commerce data analyst. Format these SQL query results into a clear, readable response.
+				content: `You're an e-commerce data analyst. Format these SQL query results into a clear, readable response optimized for a small mobile chat window (max-width: 400px).
 
-1. Start with a brief summary of what the data shows
-2. Present the data in a clean, organized format using a numbered list where appropriate
-3. EXCLUDE any database IDs from your response - don't show values like "id", "user_id", "product_id", etc.
-4. Keep each item concise - 2-3 lines max per item in lists
-5. Use clean line breaks between items
-6. Format dates in a user-friendly way (e.g., "May 21, 2023" instead of timestamps)
-7. Be concise and professional
-8. DO NOT include the SQL query in your response
-9. If the results are empty, explain that no matching data was found and suggest possible reasons
-10. If there's a large number of results, focus on highlighting trends and notable items
+1. Start with a brief, bold headline summarizing the data
+2. Use concise text with short paragraphs (1-2 lines max)
+3. Use markdown formatting:
+   - **Bold** for important data points
+   - Use dashes (-) not asterisks (*) for bullet lists
+   - Use short bullet items with a dash followed by a space
+   - Keep bullet lists clean without extra line breaks
+   - Short, clear headings with ## or ### (not #)
+   - Add spacing between sections
+4. EXCLUDE any database IDs from your response - don't show "id", "user_id", etc.
+5. Format dates in a user-friendly way (e.g., "May 21, 2023")
+6. Limit lists to 5-7 items max even if more data exists
+7. DO NOT include the SQL query in your response
+8. NEVER use asterisks (*) as bullet points, always use dashes (-)
 
-Use a conversational, helpful tone as if you're explaining the results to a business manager.`,
+For data presentation:
+- For empty results: Brief explanation + possible reason
+- For 1-5 items: Show each with dashes (-) as bullet points
+- For >5 items: Show highlights and summarize trends
+
+Use markdown and keep formatting compact to fit a small mobile screen.`,
 			},
 			{
 				role: 'user',
@@ -361,24 +395,27 @@ Fixed query:`,
 				? sqlError.message
 				: JSON.stringify(sqlError).substring(0, 100);
 
-		stream.update(`I tried to run this SQL query:
+		stream.update(`### Error Running Query
+
+I tried to run this query but encountered an issue:
 
 \`\`\`
 ${sqlQuery}
 \`\`\`
 
-But I encountered an error: ${errorMessage}
+**Error:** ${errorMessage}
 
-Here's a corrected version you can try:
+### Suggested Fix
+
+Try this corrected version:
 
 \`\`\`
 ${fixedQuery}
 \`\`\`
 
-Remember that in MySQL:
-- Use proper date functions like CURDATE() and DATE_SUB()
-- Table names don't need quotes
-- Use LIKE with LOWER() for case-insensitive searches`);
+**Note:** MySQL requires specific syntax for:
+- Date functions (use CURDATE, DATE_SUB)
+- Case-sensitive searches (use LOWER with LIKE)`);
 	} catch (fixError) {
 		// Fallback if query fixing fails
 		console.error('Error generating fixed query:', fixError);
@@ -391,7 +428,9 @@ Remember that in MySQL:
 			userMessageLower.includes('last') ||
 			userMessageLower.includes('date')
 		) {
-			stream.update(`I tried to run this SQL query but encountered an error.
+			stream.update(`### Error Running Query
+
+I tried to run your query but encountered an error.
 
 Try this MySQL-compatible version instead:
 
@@ -405,17 +444,21 @@ LIMIT 20
 
 This should show you orders from the last month.`);
 		} else {
-			stream.update(`I tried to run this SQL query but encountered an error:
+			stream.update(`### Error Running Query
+
+I tried to run this SQL query but encountered an error:
 
 \`\`\`
 ${sqlQuery}
 \`\`\`
 
-Error: ${
+**Error:** ${
 				typeof sqlError === 'object' && sqlError !== null
 					? sqlError.message || JSON.stringify(sqlError).substring(0, 100)
 					: 'Unknown SQL error'
-			}`);
+			}
+
+Try simplifying your request or using different search terms.`);
 		}
 	}
 }
