@@ -43,6 +43,12 @@ export async function signinAction(
 		);
 
 		if (res.data.success) {
+			if (res.data.user.role === 'USER') {
+				return {
+					message: 'You are not authorized to access this application.',
+				};
+			}
+
 			await createSession(res.data.user.id + '', res.data.token, res.data.user);
 		} else {
 			return { message: res.data.message || 'Login failed. Please try again.' };

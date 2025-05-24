@@ -348,7 +348,7 @@ async function handleSqlError(
 ) {
 	try {
 		const { textStream: fixQueryStream } = streamText({
-			model: gemini('gemini-1.5-flash'),
+			model: gemini('gemini-1p.5-flash'),
 			messages: [
 				{
 					role: 'system',
