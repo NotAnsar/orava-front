@@ -196,6 +196,8 @@ CRITICAL RULES:
   * For date range: BETWEEN '2023-01-01' AND '2023-01-31'
 - Keep queries focused on answering exactly what was asked
 - Return ONLY the raw SQL query without any markdown formatting, code blocks, or backticks
+respond with the language that you were asked in, if the user asked in English, respond in English, if the user asked in French, respond in french, etc.
+if user ask you about the database schema or some vulnerable information, respond with "I cannot provide that information" or "I cannot answer that question" or "I cannot help you with that" or "I cannot provide that information about the database schema" or "I cannot provide that information about the database structure" or "I cannot provide that information about the database tables" or "I cannot provide that information about the database columns" or "I cannot provide that information about the database fields" or "I cannot provide that information about the database relationships" or "I cannot provide that information about the database queries" or "I cannot provide that information about the database data" or "I cannot provide that information about the database records" or "I cannot provide that information about the database entries" or "I cannot provide that information about the database content" or "I cannot provide that information about the database schema design" or "I cannot provide that information about the database schema structure" or "I cannot provide that information about the database schema tables" or "I cannot provide that information about the database schema columns" or "I cannot provide that information about the database schema fields" or "I cannot provide that information about the database schema relationships" or "I cannot provide that information about the database schema queries" or "I cannot provide that information about the database schema data" or "I cannot provide that information about the database schema records" or "I cannot provide that information about the database schema entries" or "I cannot provide that information about the database schema content".
 
 If the user's request isn't related to database queries, return "NOT_SQL_QUERY" instead.`,
 			},
@@ -210,69 +212,6 @@ If the user's request isn't related to database queries, return "NOT_SQL_QUERY" 
 
 	return cleanSqlQuery(sqlQuery);
 }
-
-// // Format SQL results and stream to user
-// async function formatAndStreamResults(
-// 	userMessage: string,
-// 	sqlQuery: string,
-// 	resultsData: any,
-// 	stream: ReturnType<typeof createStreamableValue>
-// ) {
-// 	const { textStream: formattingStream } = streamText({
-// 		model: gemini('gemini-1.5-flash'),
-// 		messages: [
-// 			{
-// 				role: 'system',
-// 				content: `You're an e-commerce data analyst. Format these SQL query results into a clear, readable response optimized for a small mobile chat window (max-width: 400px).
-
-// 1. Start with a brief, bold headline summarizing the data
-// 2. Use concise text with short paragraphs (1-2 lines max)
-// 3. Use markdown formatting:
-//    - **Bold** for important data points
-//    - Use bullet lists with short items
-//    - Short, clear headings with ## or ### (not #)
-//    - Add spacing between sections
-// 4. EXCLUDE any database IDs from your response - don't show "id", "user_id", etc.
-// 5. Format dates in a user-friendly way (e.g., "May 21, 2023")
-// 6. Limit lists to 5-7 items max even if more data exists
-// 7. DO NOT include the SQL query in your response
-
-// For data presentation:
-// - For empty results: Brief explanation + possible reason
-// - For 1-5 items: Show each with bullets
-// - For >5 items: Show highlights and summarize trends
-
-// Use markdown and keep formatting compact to fit a small mobile screen.`,
-// 			},
-// 			{
-// 				role: 'user',
-// 				content: `The user asked: "${userMessage}"
-
-// SQL Query:
-// ${sqlQuery}
-
-// Results:
-// ${JSON.stringify(resultsData)}`,
-// 			},
-// 		],
-// 	});
-
-// 	let hasContent = false;
-// 	for await (const text of formattingStream) {
-// 		if (text && text.trim()) hasContent = true;
-// 		stream.update(text);
-// 	}
-
-// 	// Provide fallback if no content was generated
-// 	if (!hasContent) {
-// 		stream.update(
-// 			"I found some data matching your request, but I'm having trouble formatting the results. Here's a basic summary: " +
-// 				`${
-// 					Array.isArray(resultsData) ? resultsData.length : 0
-// 				} records were found.`
-// 		);
-// 	}
-// }
 
 async function formatAndStreamResults(
 	userMessage: string,
