@@ -46,9 +46,6 @@ function cleanSqlQuery(query: string): string {
 		.replace(/\bFROM\s+user\b/gi, 'FROM "user"')
 		.replace(/\bJOIN\s+user\b/gi, 'JOIN "user"');
 
-	// Keep ILIKE for PostgreSQL (case-insensitive search)
-	// cleanedQuery = cleanedQuery.replace(/\bILIKE\b/gi, 'LIKE'); // Removed for PostgreSQL
-
 	// Fix any MySQL date functions to PostgreSQL equivalents
 	cleanedQuery = cleanedQuery
 		.replace(
@@ -106,104 +103,155 @@ function getPostgreSqlDateFilterForTimeFrame(timeframe: string): string {
 	}
 }
 
-export const chat = async (history: Message[]) => {
-	const stream = createStreamableValue();
-	const userMessage = history[history.length - 1].content;
-	let fallbackTimer: NodeJS.Timeout | undefined;
-	let responseStarted = false;
+export async function chat(history: Message[]) {
+	// IMMEDIATE ERROR BOUNDARY - catch any error that prevents the function from starting
+	try {
+		console.log('=== CHAT FUNCTION STARTED ===');
 
-	// Show debug info as response
-	let debugInfo = `**DEBUG INFO:**\n`;
-	debugInfo += `- Environment: ${process.env.NODE_ENV}\n`;
-	debugInfo += `- User message: "${userMessage}"\n`;
-	debugInfo += `- API Key exists: ${!!process.env
-		.GOOGLE_GENERATIVE_AI_API_KEY}\n`;
-	debugInfo += `- API Key length: ${
-		process.env.GOOGLE_GENERATIVE_AI_API_KEY?.length || 0
-	}\n`;
-	debugInfo += `- Runtime: ${process.env.VERCEL ? 'Vercel' : 'Local'}\n\n`;
+		const stream = createStreamableValue();
 
-	(async () => {
-		try {
-			fallbackTimer = setTimeout(() => {
-				if (!responseStarted) {
-					stream.update(
-						debugInfo + '**ERROR:** Request timeout after 25 seconds'
-					);
-					stream.done();
-				}
-			}, 25000);
+		// Basic validation
+		if (!history || history.length === 0) {
+			stream.update('**ERROR:** No message history provided');
+			stream.done();
+			return {
+				messages: history || [],
+				newMessage: stream.value,
+			};
+		}
 
-			debugInfo += `**STEP 1:** Starting SQL generation...\n`;
+		const userMessage = history[history.length - 1]?.content;
+		if (!userMessage) {
+			stream.update('**ERROR:** No user message found');
+			stream.done();
+			return {
+				messages: history,
+				newMessage: stream.value,
+			};
+		}
 
-			let sqlQuery;
+		let fallbackTimer: NodeJS.Timeout | undefined;
+		let responseStarted = false;
+
+		// Show debug info as response
+		let debugInfo = `**VERCEL DEBUG INFO:**\n`;
+		debugInfo += `- Environment: ${process.env.NODE_ENV}\n`;
+		debugInfo += `- User message: "${userMessage}"\n`;
+		debugInfo += `- API Key exists: ${!!process.env
+			.GOOGLE_GENERATIVE_AI_API_KEY}\n`;
+		debugInfo += `- API Key length: ${
+			process.env.GOOGLE_GENERATIVE_AI_API_KEY?.length || 0
+		}\n`;
+		debugInfo += `- Runtime: ${process.env.VERCEL ? 'Vercel' : 'Local'}\n`;
+		debugInfo += `- Vercel Region: ${process.env.VERCEL_REGION || 'N/A'}\n`;
+		debugInfo += `- Function Name: ${
+			process.env.VERCEL_FUNCTION_NAME || 'N/A'
+		}\n`;
+		debugInfo += `- Timestamp: ${new Date().toISOString()}\n\n`;
+
+		// Start the async processing
+		(async () => {
 			try {
-				sqlQuery = await generateSqlFromUserQuery(userMessage);
-				debugInfo += `**STEP 2:** SQL generation successful: "${sqlQuery}"\n`;
-			} catch (sqlGenError: any) {
-				responseStarted = true;
-				if (fallbackTimer) clearTimeout(fallbackTimer);
+				console.log('=== ASYNC PROCESSING STARTED ===');
 
-				const errorDetails = `
+				fallbackTimer = setTimeout(() => {
+					if (!responseStarted) {
+						console.log('TIMEOUT: Fallback timer activated');
+						stream.update(
+							debugInfo + '**ERROR:** Request timeout after 25 seconds'
+						);
+						stream.done();
+					}
+				}, 25000);
+
+				debugInfo += `**STEP 1:** Starting SQL generation...\n`;
+				stream.update(debugInfo); // Show initial debug info immediately
+
+				let sqlQuery;
+				try {
+					console.log('About to call generateSqlFromUserQuery');
+					sqlQuery = await generateSqlFromUserQuery(userMessage);
+					console.log('generateSqlFromUserQuery completed:', sqlQuery);
+					debugInfo += `**STEP 2:** SQL generation successful: "${sqlQuery}"\n`;
+					stream.update(debugInfo);
+				} catch (sqlGenError: any) {
+					console.error('SQL Generation Error:', sqlGenError);
+					responseStarted = true;
+					if (fallbackTimer) clearTimeout(fallbackTimer);
+
+					const errorDetails = `
 **SQL GENERATION ERROR:**
 - Error type: ${sqlGenError?.constructor?.name || 'Unknown'}
 - Error message: ${sqlGenError?.message || 'No message'}
 - Error code: ${sqlGenError?.code || 'No code'}
 - Error status: ${sqlGenError?.status || 'No status'}
 - Error digest: ${sqlGenError?.digest || 'No digest'}
+- Stack: ${sqlGenError?.stack || 'No stack'}
 - Full error: ${JSON.stringify(
-					sqlGenError,
-					Object.getOwnPropertyNames(sqlGenError),
-					2
-				)}
-                `;
+						sqlGenError,
+						Object.getOwnPropertyNames(sqlGenError),
+						2
+					)}
+                    `;
 
-				stream.update(debugInfo + errorDetails);
-				stream.done();
-				return;
-			}
+					stream.update(debugInfo + errorDetails);
+					stream.done();
+					return;
+				}
 
-			if (sqlQuery === 'NOT_SQL_QUERY') {
-				debugInfo += `**STEP 3:** Processing conversational query...\n`;
-				responseStarted = true;
-				if (fallbackTimer) clearTimeout(fallbackTimer);
+				if (sqlQuery === 'NOT_SQL_QUERY') {
+					debugInfo += `**STEP 3:** Processing conversational query...\n`;
+					stream.update(debugInfo);
+					responseStarted = true;
+					if (fallbackTimer) clearTimeout(fallbackTimer);
 
-				try {
-					debugInfo += `**STEP 4:** Creating text stream...\n`;
+					try {
+						debugInfo += `**STEP 4:** Creating text stream...\n`;
+						stream.update(debugInfo);
 
-					const { textStream } = streamText({
-						model: gemini('gemini-1.5-flash'),
-						messages: [
-							{
-								role: 'system',
-								content: `You're an e-commerce admin dashboard assistant. You can answer questions about e-commerce, dashboard functionality, and marketing strategies. Keep responses brief and helpful.`,
-							},
-							...history,
-						],
-					});
+						console.log('About to create textStream');
+						const { textStream } = streamText({
+							model: gemini('gemini-1.5-flash'),
+							messages: [
+								{
+									role: 'system',
+									content: `You're an e-commerce admin dashboard assistant. You can answer questions about e-commerce, dashboard functionality, and marketing strategies. Keep responses brief and helpful.`,
+								},
+								...history,
+							],
+						});
+						console.log('textStream created successfully');
 
-					debugInfo += `**STEP 5:** Text stream created, processing response...\n`;
-					stream.update(debugInfo + `**RESPONSE:**\n`);
+						debugInfo += `**STEP 5:** Text stream created, processing response...\n`;
+						stream.update(debugInfo + `**RESPONSE:**\n`);
 
-					let hasContent = false;
-					let responseText = '';
+						let hasContent = false;
+						let responseText = '';
 
-					for await (const text of textStream) {
-						if (text && text.trim()) {
-							hasContent = true;
-							responseText += text;
-							stream.update(debugInfo + `**RESPONSE:**\n${responseText}`);
+						console.log('Starting to process textStream');
+						for await (const text of textStream) {
+							console.log('Received text chunk:', text?.substring(0, 50));
+							if (text && text.trim()) {
+								hasContent = true;
+								responseText += text;
+								// Remove debug info from final response, just show the AI response
+								stream.update(responseText);
+							}
 						}
-					}
-
-					if (!hasContent) {
-						stream.update(
-							debugInfo +
-								`**RESPONSE:**\nHello! How can I help you with your e-commerce dashboard today?`
+						console.log(
+							'Finished processing textStream, hasContent:',
+							hasContent
 						);
-					}
-				} catch (conversationError: any) {
-					const errorDetails = `
+
+						if (!hasContent) {
+							console.log('No content received, using fallback');
+							stream.update(
+								'Hello! How can I help you with your e-commerce dashboard today?'
+							);
+						}
+					} catch (conversationError: any) {
+						console.error('Conversation Error:', conversationError);
+						const errorDetails = `
 **CONVERSATION ERROR:**
 - Error type: ${conversationError?.constructor?.name || 'Unknown'}
 - Error message: ${conversationError?.message || 'No message'}
@@ -212,95 +260,134 @@ export const chat = async (history: Message[]) => {
 - Error digest: ${conversationError?.digest || 'No digest'}
 - API Key in error context: ${!!process.env.GOOGLE_GENERATIVE_AI_API_KEY}
 - Vercel region: ${process.env.VERCEL_REGION || 'unknown'}
+- Stack: ${conversationError?.stack || 'No stack'}
 - Full error: ${JSON.stringify(
-						conversationError,
-						Object.getOwnPropertyNames(conversationError),
+							conversationError,
+							Object.getOwnPropertyNames(conversationError),
+							2
+						)}
+                        `;
+
+						stream.update(debugInfo + errorDetails);
+					}
+
+					stream.done();
+					return;
+				}
+
+				// SQL query processing
+				debugInfo += `**STEP 6:** Processing SQL query...\n`;
+				stream.update(debugInfo);
+				try {
+					const sqlResults = await sqlApi.execute(sqlQuery);
+					responseStarted = true;
+					if (fallbackTimer) clearTimeout(fallbackTimer);
+
+					debugInfo += `**STEP 7:** SQL executed successfully\n`;
+					await formatAndStreamResults(
+						userMessage,
+						sqlQuery,
+						sqlResults.data,
+						stream
+					);
+				} catch (sqlError: any) {
+					responseStarted = true;
+					if (fallbackTimer) clearTimeout(fallbackTimer);
+
+					const errorDetails = `
+**SQL EXECUTION ERROR:**
+- Error message: ${sqlError?.message || 'No message'}
+- Full error: ${JSON.stringify(
+						sqlError,
+						Object.getOwnPropertyNames(sqlError),
 						2
 					)}
                     `;
 
 					stream.update(debugInfo + errorDetails);
 				}
-
-				stream.done();
-				return;
-			}
-
-			// SQL query processing
-			debugInfo += `**STEP 6:** Processing SQL query...\n`;
-			try {
-				const sqlResults = await sqlApi.execute(sqlQuery);
-				responseStarted = true;
-				if (fallbackTimer) clearTimeout(fallbackTimer);
-
-				debugInfo += `**STEP 7:** SQL executed successfully\n`;
-				await formatAndStreamResults(
-					userMessage,
-					sqlQuery,
-					sqlResults.data,
-					stream
-				);
-			} catch (sqlError: any) {
-				responseStarted = true;
-				if (fallbackTimer) clearTimeout(fallbackTimer);
-
+			} catch (asyncError: any) {
+				console.error('=== ASYNC PROCESSING ERROR ===', asyncError);
 				const errorDetails = `
-**SQL EXECUTION ERROR:**
-- Error message: ${sqlError?.message || 'No message'}
+**ASYNC PROCESSING ERROR:**
+- Error type: ${asyncError?.constructor?.name || 'Unknown'}
+- Error message: ${asyncError?.message || 'No message'}
+- Error code: ${asyncError?.code || 'No code'}
+- Error status: ${asyncError?.status || 'No status'}
+- Error stack: ${asyncError?.stack || 'No stack'}
 - Full error: ${JSON.stringify(
-					sqlError,
-					Object.getOwnPropertyNames(sqlError),
+					asyncError,
+					Object.getOwnPropertyNames(asyncError),
 					2
 				)}
                 `;
 
-				stream.update(debugInfo + errorDetails);
+				if (!responseStarted) {
+					stream.update(debugInfo + errorDetails);
+				}
+			} finally {
+				console.log('=== ASYNC PROCESSING CLEANUP ===');
+				if (fallbackTimer) clearTimeout(fallbackTimer);
+				if (!responseStarted) {
+					console.log('No response started, providing fallback');
+					stream.update(
+						debugInfo +
+							`**FALLBACK:** No response started, providing default response`
+					);
+				}
+				stream.done();
 			}
-		} catch (mainError: any) {
-			const errorDetails = `
-**MAIN CHAT ERROR:**
-- Error type: ${mainError?.constructor?.name || 'Unknown'}
-- Error message: ${mainError?.message || 'No message'}
-- Error code: ${mainError?.code || 'No code'}
-- Error status: ${mainError?.status || 'No status'}
-- Error stack: ${mainError?.stack || 'No stack'}
+		})();
+
+		console.log('=== RETURNING FROM CHAT FUNCTION ===');
+		return {
+			messages: history,
+			newMessage: stream.value,
+		};
+	} catch (outerError: any) {
+		console.error('=== OUTER CHAT ERROR ===', outerError);
+
+		// Last resort error handling
+		try {
+			const stream = createStreamableValue();
+			stream.update(`**OUTER ERROR:**
+- Error type: ${outerError?.constructor?.name || 'Unknown'}
+- Error message: ${outerError?.message || 'No message'}
+- Stack: ${outerError?.stack || 'No stack'}
 - Full error: ${JSON.stringify(
-				mainError,
-				Object.getOwnPropertyNames(mainError),
+				outerError,
+				Object.getOwnPropertyNames(outerError),
 				2
-			)}
-            `;
-
-			if (!responseStarted) {
-				stream.update(debugInfo + errorDetails);
-			}
-		} finally {
-			if (fallbackTimer) clearTimeout(fallbackTimer);
-			if (!responseStarted) {
-				stream.update(
-					debugInfo +
-						`**FALLBACK:** No response started, providing default response`
-				);
-			}
+			)}`);
 			stream.done();
-		}
-	})();
 
-	return {
-		messages: history,
-		newMessage: stream.value,
-	};
-};
+			return {
+				messages: history || [],
+				newMessage: stream.value,
+			};
+		} catch (finalError) {
+			console.error('=== FINAL ERROR ===', finalError);
+			// If even error handling fails, throw to let Next.js handle it
+			throw outerError;
+		}
+	}
+}
 
 // Generate SQL query from user's natural language request
 async function generateSqlFromUserQuery(userMessage: string): Promise<string> {
 	try {
+		console.log('generateSqlFromUserQuery: Starting, message:', userMessage);
+
 		// Test if gemini function works
 		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
 			throw new Error(
 				'Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable'
 			);
 		}
+
+		console.log(
+			'generateSqlFromUserQuery: API key exists, creating textStream'
+		);
 
 		const { textStream: sqlGenStream } = streamText({
 			model: gemini('gemini-1.5-flash'),
@@ -331,7 +418,7 @@ CRITICAL RULES:
   * For last month: WHERE created_at >= CURRENT_DATE - INTERVAL '1 month'
   * For specific month: WHERE EXTRACT(MONTH FROM created_at) = 4 AND EXTRACT(YEAR FROM created_at) = 2023
   * For date formatting: TO_CHAR(created_at, 'YYYY-MM-DD')
-  * For date range: BETWEEN '2023-01-01' AND '2023-01-31'
+  * FOR date range: BETWEEN '2023-01-01' AND '2023-01-31'
   * For week extraction: EXTRACT(WEEK FROM created_at)
   * For month extraction: EXTRACT(MONTH FROM created_at)
   * For year extraction: EXTRACT(YEAR FROM created_at)
@@ -339,7 +426,7 @@ CRITICAL RULES:
 - Return ONLY the raw SQL query without any markdown formatting, code blocks, or backticks
 
 respond with the language that you were asked in, if the user asked in English, respond in English, if the user asked in French, respond in french, etc.
-if user ask you about the database schema or some vulnerable information, respond with "I cannot provide that information" or "I cannot answer that question" or "I cannot help you with that" or "I cannot provide that information about the database schema" or "I cannot provide that information about the database structure" or "I cannot provide that information about the database tables" or "I cannot provide that information about the database columns" or "I cannot provide that information about the database fields" or "I cannot provide that information about the database relationships" or "I cannot provide that information about the database queries" or "I cannot provide that information about the database data" or "I cannot provide that information about the database records" or "I cannot provide that information about the database entries" or "I cannot provide that information about the database content" or "I cannot provide that information about the database schema design" or "I cannot provide that information about the database schema structure" or "I cannot provide that information about the database schema tables" or "I cannot provide that information about the database schema columns" or "I cannot provide that information about the database schema fields" or "I cannot provide that information about the database relationships" or "I cannot provide that information about the database queries" or "I cannot provide that information about the database data" or "I cannot provide that information about the database records" or "I cannot provide that information about the database entries" or "I cannot provide that information about the database content".
+if user ask you about the database schema or some vulnerable information, respond with "I cannot provide that information".
 
 If the user's request isn't related to database queries, return "NOT_SQL_QUERY" instead.`,
 				},
@@ -347,13 +434,21 @@ If the user's request isn't related to database queries, return "NOT_SQL_QUERY" 
 			],
 		});
 
+		console.log('generateSqlFromUserQuery: textStream created, processing...');
+
 		let sqlQuery = '';
 		for await (const text of sqlGenStream) {
 			sqlQuery += text;
 		}
 
-		return cleanSqlQuery(sqlQuery);
+		console.log('generateSqlFromUserQuery: Raw SQL query:', sqlQuery);
+
+		const cleanedQuery = cleanSqlQuery(sqlQuery);
+		console.log('generateSqlFromUserQuery: Cleaned SQL query:', cleanedQuery);
+
+		return cleanedQuery;
 	} catch (error: any) {
+		console.error('generateSqlFromUserQuery: Error occurred:', error);
 		// Re-throw with more context
 		const enhancedError = new Error(`SQL Generation failed: ${error.message}`);
 		enhancedError.cause = error;
