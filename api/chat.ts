@@ -12,7 +12,7 @@ const DB_SCHEMA = `
 2. category: id, name, created_at
 3. orders: id, user_id, created_at, total, status
 4. order_items: id, created_at, order_id, product_id, quantity, unit_price
-5. user: id, created_at, f_name, l_name, email, password, role
+5. user: id, created_at, f_name, l_name, email, password, role (ADMIN, USER,GUEST)
 6. colors: id, name, value
 7. sizes: id, name, created_at, fullname
 `;
@@ -28,23 +28,10 @@ function cleanSqlQuery(query: string): string {
 		.replace(/\\n/g, ' ')
 		.trim();
 
-	// Fix table names - ensure no quotes except for user table
+	// Fix table names - ensure no quotes
 	cleanedQuery = cleanedQuery
-		.replace(/\bFROM\s+"([^"]+)"\b/gi, (match, tableName) => {
-			return tableName.toLowerCase() === 'user'
-				? `FROM "user"`
-				: `FROM ${tableName}`;
-		})
-		.replace(/\bJOIN\s+"([^"]+)"\b/gi, (match, tableName) => {
-			return tableName.toLowerCase() === 'user'
-				? `JOIN "user"`
-				: `JOIN ${tableName}`;
-		});
-
-	// Ensure user table is always quoted
-	cleanedQuery = cleanedQuery
-		.replace(/\bFROM\s+user\b/gi, 'FROM "user"')
-		.replace(/\bJOIN\s+user\b/gi, 'JOIN "user"');
+		.replace(/\bFROM\s+"([^"]+)"\b/gi, 'FROM $1')
+		.replace(/\bJOIN\s+"([^"]+)"\b/gi, 'JOIN $1');
 
 	// Fix any MySQL date functions to PostgreSQL equivalents
 	cleanedQuery = cleanedQuery
@@ -79,221 +66,117 @@ function cleanSqlQuery(query: string): string {
 	return cleanedQuery;
 }
 
-export async function chat(history: Message[]) {
-	try {
-		console.log('=== CHAT FUNCTION STARTED ===');
+export const chat = async (history: Message[]) => {
+	const stream = createStreamableValue();
+	const userMessage = history[history.length - 1].content;
+	let fallbackTimer: NodeJS.Timeout | undefined;
+	let responseStarted = false;
+	let streamClosed = false;
 
-		const stream = createStreamableValue();
-
-		// Basic validation
-		if (!history || history.length === 0) {
-			stream.update('**ERROR:** No message history provided');
-			stream.done();
-			return {
-				messages: history || [],
-				newMessage: stream.value,
-			};
-		}
-
-		const userMessage = history[history.length - 1]?.content;
-		if (!userMessage) {
-			stream.update('**ERROR:** No user message found');
-			stream.done();
-			return {
-				messages: history,
-				newMessage: stream.value,
-			};
-		}
-
-		let fallbackTimer: NodeJS.Timeout | undefined;
-		let responseStarted = false;
-
-		// Start the async processing
-		(async () => {
-			try {
-				console.log('=== ASYNC PROCESSING STARTED ===');
-
-				fallbackTimer = setTimeout(() => {
-					if (!responseStarted) {
-						console.log('TIMEOUT: Fallback timer activated');
-						stream.update(
-							'Request timeout. Please try again with a simpler question.'
-						);
-						stream.done();
-					}
-				}, 25000);
-
-				let sqlQuery;
-				try {
-					console.log('About to call generateSqlFromUserQuery');
-					sqlQuery = await generateSqlFromUserQuery(userMessage);
-					console.log('generateSqlFromUserQuery completed:', sqlQuery);
-				} catch (sqlGenError: any) {
-					console.error('SQL Generation Error:', sqlGenError);
-					responseStarted = true;
-					if (fallbackTimer) clearTimeout(fallbackTimer);
-
-					stream.update(
-						`I had trouble understanding your request. Could you please rephrase it? For example:\n\n- "Show me products with low stock"\n- "What are my recent orders?"\n- "Which products sell the most?"`
-					);
-					stream.done();
-					return;
-				}
-
-				if (sqlQuery === 'NOT_SQL_QUERY') {
-					console.log('Non-SQL query detected, using fallback response');
-					responseStarted = true;
-					if (fallbackTimer) clearTimeout(fallbackTimer);
-
-					// Instead of using AI, provide a helpful fallback
-					stream.update(`I can help you analyze your e-commerce data! Here are some things you can ask me:
-
-**📊 Product Analytics:**
-- "Which products are low on stock?"
-- "Show me all products"
-- "What are the featured products?"
-
-**🛍️ Order Information:**
-- "Show me recent orders"
-- "What orders were placed today?"
-- "Show me pending orders"
-
-**👥 Customer Data:**
-- "List all customers"
-- "Show me customer information"
-
-**📈 Business Insights:**
-- "What are the top-selling products?"
-- "Show me sales from last month"
-
-Try asking me one of these questions!`);
-
-					stream.done();
-					return;
-				}
-
-				// SQL query processing
-				console.log('Processing SQL query...');
-				console.log('query :', sqlQuery);
-
-				try {
-					const sqlResults = await sqlApi.execute(sqlQuery);
-					responseStarted = true;
-					if (fallbackTimer) clearTimeout(fallbackTimer);
-
-					console.log('SQL executed successfully');
-					await formatAndStreamResults(
-						userMessage,
-						sqlQuery,
-						sqlResults.data,
-						stream
-					);
-				} catch (sqlError: any) {
-					responseStarted = true;
-					if (fallbackTimer) clearTimeout(fallbackTimer);
-
-					console.error('SQL execution error:', sqlError);
-					stream.update(`I had trouble running that query. Here are some example queries you can try:
-
-**📦 Inventory:**
-- "Which products are low on stock?"
-- "Show me all products"
-
-**📋 Orders:**
-- "Show me recent orders"
-- "What orders do I have?"
-
-**👤 Customers:**
-- "List all customers"
-- "Show customer information"
-
-Please try one of these!`);
-					stream.done();
-				}
-			} catch (asyncError: any) {
-				console.error('=== ASYNC PROCESSING ERROR ===', asyncError);
-
-				if (!responseStarted) {
-					stream.update(`I'm having some technical difficulties. Please try asking a simple question like:
-
-- "Show me all products"
-- "Which products are low on stock?"
-- "Show me recent orders"
-
-Sorry for the inconvenience!`);
-				}
-				stream.done();
-			} finally {
-				console.log('=== ASYNC PROCESSING CLEANUP ===');
-				if (fallbackTimer) clearTimeout(fallbackTimer);
-				if (!responseStarted) {
-					console.log('No response started, providing fallback');
-					stream.update(
-						'Hello! I can help you analyze your e-commerce data. What would you like to know?'
-					);
-				}
-				stream.done();
-			}
-		})();
-
-		console.log('=== RETURNING FROM CHAT FUNCTION ===');
-		return {
-			messages: history,
-			newMessage: stream.value,
-		};
-	} catch (outerError: any) {
-		console.error('=== OUTER CHAT ERROR ===', outerError);
-
-		// Last resort error handling
+	(async () => {
 		try {
-			const stream = createStreamableValue();
-			stream.update(`Hello! I'm your dashboard assistant. I can help you with:
+			// Set up fallback timer for unresponsive queries
+			fallbackTimer = setTimeout(() => {
+				if (!responseStarted && !streamClosed) {
+					console.log('Fallback timer activated');
+					stream.update(
+						"Sorry, I'm having trouble processing your request right now. Please try again or rephrase your question."
+					);
+					stream.done();
+					streamClosed = true;
+				}
+			}, 10000);
 
-- Product inventory analysis
-- Order management  
-- Customer information
-- Sales reports
+			// Generate SQL from user query
+			const sqlQuery = await generateSqlFromUserQuery(userMessage);
+			console.log('Generated SQL query:', sqlQuery);
 
-What would you like to know about your business?`);
-			stream.done();
+			if (sqlQuery === 'NOT_SQL_QUERY') {
+				// Handle non-SQL queries with conversational response
+				responseStarted = true;
+				if (fallbackTimer) clearTimeout(fallbackTimer);
 
-			return {
-				messages: history || [],
-				newMessage: stream.value,
-			};
-		} catch (finalError) {
-			console.error('=== FINAL ERROR ===', finalError);
-			throw outerError;
+				const { textStream } = streamText({
+					model: gemini('gemini-1.5-flash'),
+					messages: [
+						{
+							role: 'system',
+							content: `You're an e-commerce admin dashboard assistant. You can answer questions about e-commerce, dashboard functionality, and marketing strategies.`,
+						},
+						...history,
+					],
+				});
+
+				for await (const text of textStream) {
+					stream.update(text);
+				}
+
+				if (!streamClosed) {
+					stream.done();
+					streamClosed = true;
+				}
+				return;
+			}
+
+			try {
+				// Execute the SQL query
+				const sqlResults = await sqlApi.execute(sqlQuery);
+				console.log(
+					'SQL results received, row count:',
+					Array.isArray(sqlResults.data) ? sqlResults.data.length : 'N/A'
+				);
+
+				responseStarted = true;
+				if (fallbackTimer) clearTimeout(fallbackTimer);
+
+				// Format results for display
+				await formatAndStreamResults(
+					userMessage,
+					sqlQuery,
+					sqlResults.data,
+					stream
+				);
+			} catch (sqlError) {
+				console.error('SQL execution error:', sqlError);
+				responseStarted = true;
+				if (fallbackTimer) clearTimeout(fallbackTimer);
+
+				// Handle SQL errors by suggesting fixes
+				await handleSqlError(sqlQuery, sqlError, stream, userMessage);
+			}
+		} catch (error) {
+			console.error('Chat error:', error);
+			if (!streamClosed) {
+				stream.update(
+					'Sorry, I encountered an error processing your request. Please try again.'
+				);
+			}
+		} finally {
+			if (fallbackTimer) clearTimeout(fallbackTimer);
+			// Stream is now closed by individual functions (formatAndStreamResults, handleSqlError, or NOT_SQL_QUERY branch)
 		}
-	}
-}
+	})();
+
+	return {
+		messages: history,
+		newMessage: stream.value,
+	};
+};
 
 // Generate SQL query from user's natural language request
 async function generateSqlFromUserQuery(userMessage: string): Promise<string> {
-	try {
-		console.log('generateSqlFromUserQuery: Starting, message:', userMessage);
-
-		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-			throw new Error(
-				'Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable'
-			);
-		}
-
-		console.log(
-			'generateSqlFromUserQuery: API key exists, creating textStream'
-		);
-
-		const { textStream: sqlGenStream } = streamText({
-			model: gemini('gemini-1.5-flash'),
-			messages: [
-				{
-					role: 'system',
-					content: `You are an SQL expert for a PostgreSQL e-commerce database. Convert the user's natural language request into a SELECT-only SQL query.
+	const { textStream: sqlGenStream } = streamText({
+		model: gemini('gemini-1.5-flash'),
+		messages: [
+			{
+				role: 'system',
+				content: `You are an SQL expert for a PostgreSQL e-commerce database. Convert the user's natural language request into a SELECT-only SQL query.
 
 The database has these tables with exact names:
 ${DB_SCHEMA}
 
 CRITICAL RULES:
+- Use the EXACT table names above
 - The "user" table MUST be quoted as "user" because PostgreSQL has a built-in user table
 - Other table names (orders, product, category, etc.) do NOT use quotes
 - Only generate SELECT queries (no INSERT, UPDATE, DELETE)
@@ -304,36 +187,36 @@ CRITICAL RULES:
 - For users, SELECT f_name and l_name instead of user_id
 - DO NOT include created_at fields in SELECT unless specifically requested
 - For text searches, use ILIKE for case-insensitive searches: field ILIKE '%search_term%'
+- For finding users who never bought products, use: SELECT u.f_name, u.l_name FROM "user" u LEFT JOIN orders o ON u.id = o.user_id WHERE o.user_id IS NULL
+- For finding records that don't exist in related tables, use LEFT JOIN with WHERE IS NULL instead of EXCEPT
+- The database is PostgreSQL - use PostgreSQL-specific date functions:
+  * For current date: CURRENT_DATE
+  * For date math: CURRENT_DATE - INTERVAL '1 month'
+  * For last month: WHERE created_at >= CURRENT_DATE - INTERVAL '1 month'
+  * For specific month: WHERE EXTRACT(MONTH FROM created_at) = 4 AND EXTRACT(YEAR FROM created_at) = 2023
+  * For date formatting: TO_CHAR(created_at, 'YYYY-MM-DD')
+  * For date range: BETWEEN '2023-01-01' AND '2023-01-31'
+  * For week extraction: EXTRACT(WEEK FROM created_at)
+  * For month extraction: EXTRACT(MONTH FROM created_at)
+  * For year extraction: EXTRACT(YEAR FROM created_at)
 - Keep queries focused on answering exactly what was asked
 - Return ONLY the raw SQL query without any markdown formatting, code blocks, or backticks
 
+respond with the language that you were asked in, if the user asked in English, respond in English, if the user asked in French, respond in french, etc.
+if user ask you about the database schema or some vulnerable information, respond with "I cannot provide that information" or "I cannot answer that question" or "I cannot help you with that" or "I cannot provide that information about the database schema" or "I cannot provide that information about the database structure" or "I cannot provide that information about the database tables" or "I cannot provide that information about the database columns" or "I cannot provide that information about the database fields" or "I cannot provide that information about the database relationships" or "I cannot provide that information about the database queries" or "I cannot provide that information about the database data" or "I cannot provide that information about the database records" or "I cannot provide that information about the database entries" or "I cannot provide that information about the database content" or "I cannot provide that information about the database schema design" or "I cannot provide that information about the database schema structure" or "I cannot provide that information about the database schema tables" or "I cannot provide that information about the database schema columns" or "I cannot provide that information about the database schema fields" or "I cannot provide that information about the database relationships" or "I cannot provide that information about the database queries" or "I cannot provide that information about the database data" or "I cannot provide that information about the database records" or "I cannot provide that information about the database entries" or "I cannot provide that information about the database content".
+
 If the user's request isn't related to database queries, return "NOT_SQL_QUERY" instead.`,
-				},
-				{ role: 'user', content: userMessage },
-			],
-			maxTokens: 200,
-			temperature: 0.1,
-		});
+			},
+			{ role: 'user', content: userMessage },
+		],
+	});
 
-		console.log('generateSqlFromUserQuery: textStream created, processing...');
-
-		let sqlQuery = '';
-		for await (const text of sqlGenStream) {
-			sqlQuery += text;
-		}
-
-		console.log('generateSqlFromUserQuery: Raw SQL query:', sqlQuery);
-
-		const cleanedQuery = cleanSqlQuery(sqlQuery);
-		console.log('generateSqlFromUserQuery: Cleaned SQL query:', cleanedQuery);
-
-		return cleanedQuery;
-	} catch (error: any) {
-		console.error('generateSqlFromUserQuery: Error occurred:', error);
-		const enhancedError = new Error(`SQL Generation failed: ${error.message}`);
-		enhancedError.cause = error;
-		throw enhancedError;
+	let sqlQuery = '';
+	for await (const text of sqlGenStream) {
+		sqlQuery += text;
 	}
+
+	return cleanSqlQuery(sqlQuery);
 }
 
 async function formatAndStreamResults(
@@ -342,52 +225,195 @@ async function formatAndStreamResults(
 	resultsData: any,
 	stream: ReturnType<typeof createStreamableValue>
 ) {
+	const { textStream: formattingStream } = streamText({
+		model: gemini('gemini-1.5-flash'),
+		messages: [
+			{
+				role: 'system',
+				content: `You're an e-commerce data analyst. Format these SQL query results into a clear, readable response optimized for a small mobile chat window (max-width: 400px).
+
+1. Start with a brief, bold headline summarizing the data
+2. Use concise text with short paragraphs (1-2 lines max)
+3. Use markdown formatting:
+   - **Bold** for important data points
+   - Use dashes (-) not asterisks (*) for bullet lists
+   - Use short bullet items with a dash followed by a space
+   - Keep bullet lists clean without extra line breaks
+   - Short, clear headings with ## or ### (not #)
+   - Add spacing between sections
+4. EXCLUDE any database IDs from your response - don't show "id", "user_id", etc.
+5. Format dates in a user-friendly way (e.g., "May 21, 2023")
+6. Limit lists to 5-7 items max even if more data exists
+7. DO NOT include the SQL query in your response
+8. NEVER use asterisks (*) as bullet points, always use dashes (-)
+
+For data presentation:
+- For empty results: Brief explanation + possible reason
+- For 1-5 items: Show each with dashes (-) as bullet points
+- For >5 items: Show highlights and summarize trends
+
+Use markdown and keep formatting compact to fit a small mobile screen.`,
+			},
+			{
+				role: 'user',
+				content: `The user asked: "${userMessage}"
+
+SQL Query:
+${sqlQuery}
+
+Results: 
+${JSON.stringify(resultsData)}`,
+			},
+		],
+	});
+
+	let hasContent = false;
+	for await (const text of formattingStream) {
+		if (text && text.trim()) hasContent = true;
+		stream.update(text);
+	}
+
+	// Provide fallback if no content was generated
+	if (!hasContent) {
+		stream.update(
+			"I found some data matching your request, but I'm having trouble formatting the results. Here's a basic summary: " +
+				`${
+					Array.isArray(resultsData) ? resultsData.length : 0
+				} records were found.`
+		);
+	}
+
+	// Close the stream when formatting is complete
+	stream.done();
+}
+
+// Handle SQL errors and suggest fixes
+async function handleSqlError(
+	sqlQuery: string,
+	sqlError: any,
+	stream: ReturnType<typeof createStreamableValue>,
+	userMessage: string = ''
+) {
 	try {
-		// Simple formatting without AI - just show the data directly
-		let formattedResponse = '';
+		const { textStream: fixQueryStream } = streamText({
+			model: gemini('gemini-1.5-flash'),
+			messages: [
+				{
+					role: 'system',
+					content: `You are a PostgreSQL database expert. The following query failed to execute in a PostgreSQL e-commerce database. 
+Fix the query by ensuring:
+1. Table names are correct (DO NOT use quotes for any table names)
+2. The user table is named "user" (singular), NOT "users" (plural)
+3. SQL syntax is correct for PostgreSQL specifically
+4. Only SELECT operations are used
+5. Use ILIKE for case-insensitive text searches
+6. For finding records that don't match, use LEFT JOIN with WHERE IS NULL instead of EXCEPT
+7. Use proper PostgreSQL date functions:
+   - Current date: CURRENT_DATE
+   - Date arithmetic: CURRENT_DATE - INTERVAL '1 month'
+   - For "last month": WHERE created_at >= CURRENT_DATE - INTERVAL '1 month'
+   - For specific year-month: WHERE EXTRACT(MONTH FROM created_at)=4 AND EXTRACT(YEAR FROM created_at)=2023
+   - For date formatting: TO_CHAR(created_at, 'YYYY-MM-DD')
+   - For extracting parts: EXTRACT(MONTH FROM created_at), EXTRACT(YEAR FROM created_at)
+8. Return ONLY the raw SQL query without any backticks or formatting
 
-		if (
-			!resultsData ||
-			(Array.isArray(resultsData) && resultsData.length === 0)
-		) {
-			formattedResponse =
-				"**No Results Found**\n\nYour query didn't return any data. This could mean:\n- The data doesn't exist\n- Try a different search term\n- Check your filters";
-		} else if (Array.isArray(resultsData)) {
-			// Create a nice header based on the query
-			if (sqlQuery.toLowerCase().includes('stock')) {
-				formattedResponse = `**📦 Inventory Status**\n\nFound ${resultsData.length} products:\n\n`;
-			} else if (sqlQuery.toLowerCase().includes('order')) {
-				formattedResponse = `**🛍️ Orders**\n\nFound ${resultsData.length} orders:\n\n`;
-			} else if (sqlQuery.toLowerCase().includes('user')) {
-				formattedResponse = `**👥 Customers**\n\nFound ${resultsData.length} customers:\n\n`;
-			} else {
-				formattedResponse = `**📊 Results**\n\nFound ${resultsData.length} records:\n\n`;
-			}
+Remember:
+- Table names: user, orders, product, category, colors, sizes, order_items
+- None of the tables should have quotes
+- PostgreSQL is case-sensitive for identifiers by default
+- Use ILIKE for case-insensitive searches`,
+				},
+				{
+					role: 'user',
+					content: `Failed query: ${sqlQuery}
+Error: ${JSON.stringify(sqlError)}
 
-			resultsData.slice(0, 10).forEach((item, index) => {
-				if (typeof item === 'object') {
-					const values = Object.values(item)
-						.filter((val) => val !== null)
-						.join(' | ');
-					formattedResponse += `• ${values}\n`;
-				} else {
-					formattedResponse += `• ${item}\n`;
-				}
-			});
-
-			if (resultsData.length > 10) {
-				formattedResponse += `\n*... and ${
-					resultsData.length - 10
-				} more results*`;
-			}
-		} else {
-			formattedResponse = `**Result:** ${JSON.stringify(resultsData)}`;
+Fixed query:`,
+				},
+			],
+		});
+		let fixedQuery = '';
+		for await (const text of fixQueryStream) {
+			fixedQuery += text;
 		}
 
-		stream.update(formattedResponse);
-		stream.done(); // IMPORTANT: Close the stream after updating
-	} catch (error: any) {
-		stream.update(`**Results:** ${JSON.stringify(resultsData, null, 2)}`);
-		stream.done(); // IMPORTANT: Close the stream even on error
+		fixedQuery = cleanSqlQuery(fixedQuery);
+		console.log('Fixed query suggestion:', fixedQuery);
+
+		// Show helpful error message with fixed query suggestion
+		const errorMessage =
+			typeof sqlError === 'object' && sqlError !== null && 'message' in sqlError
+				? sqlError.message
+				: JSON.stringify(sqlError).substring(0, 100);
+
+		stream.update(`### Error Running Query
+
+I tried to run this query but encountered an issue:
+
+\`\`\`
+${sqlQuery}
+\`\`\`
+
+**Error:** ${errorMessage}
+
+### Suggested Fix
+
+Try this corrected version:
+
+\`\`\`
+${fixedQuery}
+\`\`\`
+
+**Note:** PostgreSQL requires specific syntax for:
+- Date functions (use CURRENT_DATE, INTERVAL)
+- Case-insensitive searches (use ILIKE)
+- Date extraction (use EXTRACT function)`);
+	} catch (fixError) {
+		// Fallback if query fixing fails
+		console.error('Error generating fixed query:', fixError);
+
+		// Provide a PostgreSQL-specific date query as fallback for date-related queries
+		const userMessageLower = userMessage.toLowerCase();
+		if (
+			userMessageLower.includes('month') ||
+			userMessageLower.includes('recent') ||
+			userMessageLower.includes('last') ||
+			userMessageLower.includes('date')
+		) {
+			stream.update(`### Error Running Query
+
+I tried to run your query but encountered an error.
+
+Try this PostgreSQL-compatible version instead:
+
+\`\`\`
+SELECT o.total, o.status, TO_CHAR(o.created_at, 'YYYY-MM-DD') as date
+FROM orders o
+WHERE o.created_at >= CURRENT_DATE - INTERVAL '1 month'
+ORDER BY o.created_at DESC
+LIMIT 20
+\`\`\`
+
+This should show you orders from the last month.`);
+		} else {
+			stream.update(`### Error Running Query
+
+I tried to run this SQL query but encountered an error:
+
+\`\`\`
+${sqlQuery}
+\`\`\`
+
+**Error:** ${
+				typeof sqlError === 'object' && sqlError !== null
+					? sqlError.message || JSON.stringify(sqlError).substring(0, 100)
+					: 'Unknown SQL error'
+			}
+
+Try simplifying your request or using different search terms.`);
+		}
 	}
+
+	// Close the stream when error handling is complete
+	stream.done();
 }
