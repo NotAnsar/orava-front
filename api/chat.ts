@@ -85,10 +85,6 @@ export async function chat(history: Message[]) {
 
 		const stream = createStreamableValue();
 
-		// Display the debug message you requested
-		stream.update(`=== CHAT FUNCTION STARTED ===
-=== ASYNC PROCESSING STARTED ===`);
-
 		// Basic validation
 		if (!history || history.length === 0) {
 			stream.update('**ERROR:** No message history provided');
@@ -120,100 +116,57 @@ export async function chat(history: Message[]) {
 				fallbackTimer = setTimeout(() => {
 					if (!responseStarted) {
 						console.log('TIMEOUT: Fallback timer activated');
-						stream.update('Request timeout. Please try again.');
+						stream.update(
+							'Request timeout. Please try again with a simpler question.'
+						);
 						stream.done();
 					}
 				}, 25000);
-
-				// Update stream with debug info
-				stream.update(`=== CHAT FUNCTION STARTED ===
-=== ASYNC PROCESSING STARTED ===
-About to call generateSqlFromUserQuery`);
 
 				let sqlQuery;
 				try {
 					console.log('About to call generateSqlFromUserQuery');
 					sqlQuery = await generateSqlFromUserQuery(userMessage);
 					console.log('generateSqlFromUserQuery completed:', sqlQuery);
-
-					// Update stream with more debug info
-					stream.update(`=== CHAT FUNCTION STARTED ===
-=== ASYNC PROCESSING STARTED ===
-About to call generateSqlFromUserQuery
-generateSqlFromUserQuery: Starting, message: ${userMessage}
-generateSqlFromUserQuery: API key exists, creating textStream
-generateSqlFromUserQuery: textStream created, processing...
-=== RETURNING FROM CHAT FUNCTION ===
-generateSqlFromUserQuery: Raw SQL query: ${sqlQuery}
-generateSqlFromUserQuery: Cleaned SQL query: ${sqlQuery}
-generateSqlFromUserQuery completed: ${sqlQuery}`);
 				} catch (sqlGenError: any) {
 					console.error('SQL Generation Error:', sqlGenError);
 					responseStarted = true;
 					if (fallbackTimer) clearTimeout(fallbackTimer);
 
-					stream.update(`SQL Generation failed: ${sqlGenError.message}`);
+					stream.update(
+						`I had trouble understanding your request. Could you please rephrase it? For example:\n\n- "Show me products with low stock"\n- "What are my recent orders?"\n- "Which products sell the most?"`
+					);
 					stream.done();
 					return;
 				}
 
 				if (sqlQuery === 'NOT_SQL_QUERY') {
-					console.log('Processing conversational query...');
+					console.log('Non-SQL query detected, using fallback response');
 					responseStarted = true;
 					if (fallbackTimer) clearTimeout(fallbackTimer);
 
-					try {
-						console.log('About to create conversational textStream');
+					// Instead of using AI, provide a helpful fallback
+					stream.update(`I can help you analyze your e-commerce data! Here are some things you can ask me:
 
-						// Simple conversational response
-						const { textStream } = streamText({
-							model: gemini('gemini-1.5-flash'),
-							messages: [
-								{
-									role: 'user',
-									content: userMessage,
-								},
-							],
-							maxTokens: 150,
-							temperature: 0.7,
-						});
+**📊 Product Analytics:**
+- "Which products are low on stock?"
+- "Show me all products"
+- "What are the featured products?"
 
-						console.log('Conversational textStream created successfully');
+**🛍️ Order Information:**
+- "Show me recent orders"
+- "What orders were placed today?"
+- "Show me pending orders"
 
-						let hasContent = false;
-						let responseText = '';
+**👥 Customer Data:**
+- "List all customers"
+- "Show me customer information"
 
-						console.log('Starting to process conversational textStream');
-						for await (const text of textStream) {
-							console.log(
-								'Received conversational text chunk:',
-								text?.substring(0, 50)
-							);
-							if (text && text.trim()) {
-								hasContent = true;
-								responseText += text;
-								stream.update(responseText);
-							}
-						}
-						console.log(
-							'Finished processing conversational textStream, hasContent:',
-							hasContent
-						);
+**📈 Business Insights:**
+- "What are the top-selling products?"
+- "Show me sales from last month"
 
-						if (!hasContent) {
-							console.log(
-								'No content received from conversation, using fallback'
-							);
-							stream.update(
-								'Hello! How can I help you with your e-commerce dashboard today?'
-							);
-						}
-					} catch (conversationError: any) {
-						console.error('Conversation Error Details:', conversationError);
-						stream.update(
-							"Hello! I'm here to help with your e-commerce dashboard. What would you like to know?"
-						);
-					}
+Try asking me one of these questions!`);
 
 					stream.done();
 					return;
@@ -223,46 +176,12 @@ generateSqlFromUserQuery completed: ${sqlQuery}`);
 				console.log('Processing SQL query...');
 				console.log('query :', sqlQuery);
 
-				// Update stream before SQL execution
-				stream.update(`=== CHAT FUNCTION STARTED ===
-=== ASYNC PROCESSING STARTED ===
-About to call generateSqlFromUserQuery
-generateSqlFromUserQuery: Starting, message: ${userMessage}
-generateSqlFromUserQuery: API key exists, creating textStream
-generateSqlFromUserQuery: textStream created, processing...
-=== RETURNING FROM CHAT FUNCTION ===
-generateSqlFromUserQuery: Raw SQL query: ${sqlQuery}
-generateSqlFromUserQuery: Cleaned SQL query: ${sqlQuery}
-generateSqlFromUserQuery completed: ${sqlQuery}
-Processing SQL query...
-query : ${sqlQuery}`);
-
 				try {
 					const sqlResults = await sqlApi.execute(sqlQuery);
 					responseStarted = true;
 					if (fallbackTimer) clearTimeout(fallbackTimer);
 
 					console.log('SQL executed successfully');
-
-					// Update stream with SQL execution success
-					stream.update(`=== CHAT FUNCTION STARTED ===
-=== ASYNC PROCESSING STARTED ===
-About to call generateSqlFromUserQuery
-generateSqlFromUserQuery: Starting, message: ${userMessage}
-generateSqlFromUserQuery: API key exists, creating textStream
-generateSqlFromUserQuery: textStream created, processing...
-=== RETURNING FROM CHAT FUNCTION ===
-generateSqlFromUserQuery: Raw SQL query: ${sqlQuery}
-generateSqlFromUserQuery: Cleaned SQL query: ${sqlQuery}
-generateSqlFromUserQuery completed: ${sqlQuery}
-Processing SQL query...
-query : ${sqlQuery}
-SQL executed successfully
-
-**Results:**
-${JSON.stringify(sqlResults.data, null, 2)}`);
-
-					// Now format the results
 					await formatAndStreamResults(
 						userMessage,
 						sqlQuery,
@@ -274,34 +193,44 @@ ${JSON.stringify(sqlResults.data, null, 2)}`);
 					if (fallbackTimer) clearTimeout(fallbackTimer);
 
 					console.error('SQL execution error:', sqlError);
-					stream.update(`=== CHAT FUNCTION STARTED ===
-=== ASYNC PROCESSING STARTED ===
-About to call generateSqlFromUserQuery
-generateSqlFromUserQuery: Starting, message: ${userMessage}
-generateSqlFromUserQuery: API key exists, creating textStream
-generateSqlFromUserQuery: textStream created, processing...
-=== RETURNING FROM CHAT FUNCTION ===
-generateSqlFromUserQuery: Raw SQL query: ${sqlQuery}
-generateSqlFromUserQuery: Cleaned SQL query: ${sqlQuery}
-generateSqlFromUserQuery completed: ${sqlQuery}
-Processing SQL query...
-query : ${sqlQuery}
-SQL execution error: ${sqlError.message}`);
+					stream.update(`I had trouble running that query. Here are some example queries you can try:
+
+**📦 Inventory:**
+- "Which products are low on stock?"
+- "Show me all products"
+
+**📋 Orders:**
+- "Show me recent orders"
+- "What orders do I have?"
+
+**👤 Customers:**
+- "List all customers"
+- "Show customer information"
+
+Please try one of these!`);
+					stream.done();
 				}
 			} catch (asyncError: any) {
 				console.error('=== ASYNC PROCESSING ERROR ===', asyncError);
 
 				if (!responseStarted) {
-					stream.update(
-						`Processing error: ${asyncError.message || 'Unknown error'}`
-					);
+					stream.update(`I'm having some technical difficulties. Please try asking a simple question like:
+
+- "Show me all products"
+- "Which products are low on stock?"
+- "Show me recent orders"
+
+Sorry for the inconvenience!`);
 				}
+				stream.done();
 			} finally {
 				console.log('=== ASYNC PROCESSING CLEANUP ===');
 				if (fallbackTimer) clearTimeout(fallbackTimer);
 				if (!responseStarted) {
 					console.log('No response started, providing fallback');
-					stream.update('Hello! How can I assist you today?');
+					stream.update(
+						'Hello! I can help you analyze your e-commerce data. What would you like to know?'
+					);
 				}
 				stream.done();
 			}
@@ -318,9 +247,14 @@ SQL execution error: ${sqlError.message}`);
 		// Last resort error handling
 		try {
 			const stream = createStreamableValue();
-			stream.update(
-				`Error: ${outerError?.message || 'Unknown error occurred'}`
-			);
+			stream.update(`Hello! I'm your dashboard assistant. I can help you with:
+
+- Product inventory analysis
+- Order management  
+- Customer information
+- Sales reports
+
+What would you like to know about your business?`);
 			stream.done();
 
 			return {
@@ -410,41 +344,50 @@ async function formatAndStreamResults(
 ) {
 	try {
 		// Simple formatting without AI - just show the data directly
-		let formattedResponse = '\n\n**Formatted Results:**\n\n';
+		let formattedResponse = '';
 
 		if (
 			!resultsData ||
 			(Array.isArray(resultsData) && resultsData.length === 0)
 		) {
-			formattedResponse += 'No results found for your query.';
+			formattedResponse =
+				"**No Results Found**\n\nYour query didn't return any data. This could mean:\n- The data doesn't exist\n- Try a different search term\n- Check your filters";
 		} else if (Array.isArray(resultsData)) {
-			formattedResponse += `Found ${resultsData.length} results:\n\n`;
+			// Create a nice header based on the query
+			if (sqlQuery.toLowerCase().includes('stock')) {
+				formattedResponse = `**📦 Inventory Status**\n\nFound ${resultsData.length} products:\n\n`;
+			} else if (sqlQuery.toLowerCase().includes('order')) {
+				formattedResponse = `**🛍️ Orders**\n\nFound ${resultsData.length} orders:\n\n`;
+			} else if (sqlQuery.toLowerCase().includes('user')) {
+				formattedResponse = `**👥 Customers**\n\nFound ${resultsData.length} customers:\n\n`;
+			} else {
+				formattedResponse = `**📊 Results**\n\nFound ${resultsData.length} records:\n\n`;
+			}
+
 			resultsData.slice(0, 10).forEach((item, index) => {
 				if (typeof item === 'object') {
-					const values = Object.values(item).join(' | ');
-					formattedResponse += `${index + 1}. ${values}\n`;
+					const values = Object.values(item)
+						.filter((val) => val !== null)
+						.join(' | ');
+					formattedResponse += `• ${values}\n`;
 				} else {
-					formattedResponse += `${index + 1}. ${item}\n`;
+					formattedResponse += `• ${item}\n`;
 				}
 			});
 
 			if (resultsData.length > 10) {
-				formattedResponse += `\n... and ${
+				formattedResponse += `\n*... and ${
 					resultsData.length - 10
-				} more results.`;
+				} more results*`;
 			}
 		} else {
-			formattedResponse += JSON.stringify(resultsData, null, 2);
+			formattedResponse = `**Result:** ${JSON.stringify(resultsData)}`;
 		}
 
-		// Get the current content and append the formatted results
-		stream.update(stream.value + formattedResponse);
+		stream.update(formattedResponse);
+		stream.done(); // IMPORTANT: Close the stream after updating
 	} catch (error: any) {
-		stream.update(
-			stream.value +
-				`\n\nFormatting error: ${error.message}\nRaw data: ${JSON.stringify(
-					resultsData
-				).substring(0, 200)}...`
-		);
+		stream.update(`**Results:** ${JSON.stringify(resultsData, null, 2)}`);
+		stream.done(); // IMPORTANT: Close the stream even on error
 	}
 }
