@@ -28,63 +28,63 @@ export async function middleware(request: NextRequest) {
 
 	let isAuthenticated = !!session;
 
-	if (isAuthenticated && !isAuthPath) {
-		try {
-			const res = await axiosInstance.get(`/api/profile`);
+	// if (isAuthenticated && !isAuthPath) {
+	// 	try {
+	// 		const res = await axiosInstance.get(`/api/profile`);
 
-			if (!res?.data?.success) throw new Error('User not found');
+	// 		if (!res?.data?.success) throw new Error('User not found');
 
-			// Create a next response that we'll use to update the session
-			const response = NextResponse.next();
+	// 		// Create a next response that we'll use to update the session
+	// 		const response = NextResponse.next();
 
-			// Update session with the latest user data if available
-			if (session && res.data.data) {
-				const secretKey = process.env.SESSION_SECRET;
-				const key = new TextEncoder().encode(secretKey);
-				const SESSION_DURATION = 90 * 24 * 60 * 60 * 1000; // 90 days
-				const expiresAt = new Date(Date.now() + SESSION_DURATION);
+	// 		// Update session with the latest user data if available
+	// 		if (session && res.data.data) {
+	// 			const secretKey = process.env.SESSION_SECRET;
+	// 			const key = new TextEncoder().encode(secretKey);
+	// 			const SESSION_DURATION = 90 * 24 * 60 * 60 * 1000; // 90 days
+	// 			const expiresAt = new Date(Date.now() + SESSION_DURATION);
 
-				// Create updated session payload
-				const updatedPayload = {
-					userId: session.userId,
-					expiresAt: expiresAt,
-					token: session.token,
-					user: res.data.data,
-				};
+	// 			// Create updated session payload
+	// 			const updatedPayload = {
+	// 				userId: session.userId,
+	// 				expiresAt: expiresAt,
+	// 				token: session.token,
+	// 				user: res.data.data,
+	// 			};
 
-				// Sign the JWT
-				const updatedSession = await new SignJWT(updatedPayload)
-					.setProtectedHeader({ alg: 'HS256' })
-					.setIssuedAt()
-					.setExpirationTime(`${SESSION_DURATION / 1000}s`)
-					.sign(key);
+	// 			// Sign the JWT
+	// 			const updatedSession = await new SignJWT(updatedPayload)
+	// 				.setProtectedHeader({ alg: 'HS256' })
+	// 				.setIssuedAt()
+	// 				.setExpirationTime(`${SESSION_DURATION / 1000}s`)
+	// 				.sign(key);
 
-				// Set the cookie in the response
-				response.cookies.set('session', updatedSession, {
-					httpOnly: true,
-					secure: true,
-					expires: expiresAt,
-					sameSite: 'lax',
-					path: '/',
-				});
-			}
+	// 			// Set the cookie in the response
+	// 			response.cookies.set('session', updatedSession, {
+	// 				httpOnly: true,
+	// 				secure: true,
+	// 				expires: expiresAt,
+	// 				sameSite: 'lax',
+	// 				path: '/',
+	// 			});
+	// 		}
 
-			return response;
-		} catch (error) {
-			console.log(error);
+	// 		return response;
+	// 	} catch (error) {
+	// 		console.log(error);
 
-			isAuthenticated = false;
-			const callbackUrl = encodeURIComponent(request.url);
-			const loginUrl = new URL(
-				`/auth/signin?callbackUrl=${callbackUrl}`,
-				request.url
-			);
-			// Use middleware's direct response methods instead of calling deleteSession()
-			const response = NextResponse.redirect(loginUrl);
-			response.cookies.delete('session'); // Delete cookie directly
-			return response;
-		}
-	}
+	// 		isAuthenticated = false;
+	// 		const callbackUrl = encodeURIComponent(request.url);
+	// 		const loginUrl = new URL(
+	// 			`/auth/signin?callbackUrl=${callbackUrl}`,
+	// 			request.url
+	// 		);
+	// 		// Use middleware's direct response methods instead of calling deleteSession()
+	// 		const response = NextResponse.redirect(loginUrl);
+	// 		response.cookies.delete('session'); // Delete cookie directly
+	// 		return response;
+	// 	}
+	// }
 
 	// Redirect logic
 	if (!isAuthenticated && !isAuthPath) {
